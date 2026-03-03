@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) 2014-2021 NGames
  *
@@ -28,9 +29,7 @@ use Ngames\Framework\Database\Annotations\Id;
 
 class Author extends AbstractModel
 {
-    /**
-     * @Id
-     */
+    #[Id]
     public $id;
 
     public $lastName;

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) 2014-2021 NGames
  *
@@ -24,13 +25,15 @@
 namespace Ngames\Framework\Database\Annotations;
 
 /**
- * Annotation to register a class as a reference
- *
- *
- *         @Annotation
- *         @Target({"PROPERTY"})
+ * Attribute to register a class as a reference.
  */
+#[\Attribute(\Attribute::TARGET_PROPERTY)]
 class Reference
 {
-    public $targetClass;
+    public string $targetClass;
+
+    public function __construct(string $targetClass)
+    {
+        $this->targetClass = $targetClass;
+    }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) 2014-2021 NGames
  *
@@ -23,10 +24,8 @@
 
 namespace Ngames\Framework\Database;
 
-use Doctrine\Common\Annotations\AnnotationReader;
-use Doctrine\Common\Annotations\PsrCachedReader;
-use Symfony\Component\Cache\Adapter\ApcuAdapter;
-use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Ngames\Framework\Database\Annotations\Id;
+use Ngames\Framework\Database\Annotations\Reference;
 
 /**
  * Abstract class for models classes.
@@ -47,12 +46,6 @@ abstract class AbstractModel
      */
     protected static $metadata = [];
 
-    /**
-     * Boolean storing whether annotations were loaded or not.
-     *
-     * @var bool
-     */
-    protected static $annotationsLoaded = false;
 
     /**
      * Return the finder instance able to query the database and return instances of current class.
@@ -151,9 +144,6 @@ abstract class AbstractModel
             // Get the reflection class and class name
             $reflectionClass = new \ReflectionClass($className);
 
-            // Initialize a reader (APC if available, or in memory array cache)
-            $reader = $this->getAnnotationsReader();
-
             // For each property
             $properties = $reflectionClass->getProperties();
 
@@ -165,16 +155,17 @@ abstract class AbstractModel
                 if (!$property->isStatic() && $property->getDeclaringClass()->getName() == $className) {
                     $propertyName = $property->getName();
                     $propertyNameUnderscore = \Ngames\Framework\Utility\Inflector::underscore($propertyName);
-                    $idAnnotation = $reader->getPropertyAnnotation($property, '\Ngames\Framework\Database\Annotations\Id');
-                    $referenceAnnotation = $reader->getPropertyAnnotation($property, '\Ngames\Framework\Database\Annotations\Reference');
+                    $idAttributes = $property->getAttributes(Id::class);
+                    $referenceAttributes = $property->getAttributes(Reference::class);
 
                     // Add to the list
                     $classMetadata['properties_mapping'][$propertyNameUnderscore] = $propertyName;
-                    if ($idAnnotation !== null) {
+                    if (!empty($idAttributes)) {
                         $classMetadata['primary_key_properties'][] = $propertyNameUnderscore;
                     }
-                    if ($referenceAnnotation != null) {
-                        $classMetadata['reference_properties'][$propertyNameUnderscore] = $referenceAnnotation->targetClass;
+                    if (!empty($referenceAttributes)) {
+                        $referenceInstance = $referenceAttributes[0]->newInstance();
+                        $classMetadata['reference_properties'][$propertyNameUnderscore] = $referenceInstance->targetClass;
                     }
                 }
             }
@@ -183,16 +174,5 @@ abstract class AbstractModel
         }
 
         return self::$metadata[$className];
-    }
-
-    /**
-     * Initialize a reader (APC cache reader if available, or in memory array cache).
-     *
-     * @return \Doctrine\Common\Annotations\Reader
-     */
-    protected function getAnnotationsReader()
-    {
-        $cacheAdapter = ApcuAdapter::isSupported() ? new ApcuAdapter() : new ArrayAdapter();
-        return new PsrCachedReader(new AnnotationReader(), $cacheAdapter);
     }
 }

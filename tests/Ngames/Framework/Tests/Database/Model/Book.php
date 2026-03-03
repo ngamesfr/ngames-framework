@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) 2014-2021 NGames
  *
@@ -29,17 +30,13 @@ use Ngames\Framework\Database\Annotations\Reference;
 
 class Book extends AbstractModel
 {
-    /**
-     * @Id
-     */
+    #[Id]
     public $id;
 
     public $title;
 
     public $description;
 
-    /**
-     * @Reference("\Ngames\Framework\Tests\Database\Model\Author")
-     */
+    #[Reference(\Ngames\Framework\Tests\Database\Model\Author::class)]
     public $author;
 }

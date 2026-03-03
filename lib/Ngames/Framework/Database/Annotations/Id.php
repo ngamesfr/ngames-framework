@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) 2014-2021 NGames
  *
@@ -24,12 +25,9 @@
 namespace Ngames\Framework\Database\Annotations;
 
 /**
- * Annotation to identify the field(s) that are part of the primary key.
- *
- *
- *         @Annotation
- *         @Target({"PROPERTY"})
+ * Attribute to identify the field(s) that are part of the primary key.
  */
+#[\Attribute(\Attribute::TARGET_PROPERTY)]
 class Id
 {
 }

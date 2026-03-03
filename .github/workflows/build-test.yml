@@ -45,7 +45,6 @@ jobs:
       run: composer run test -- --log-junit ./reports/phpunit.xml --coverage-clover ./reports/phpunit.coverage.xml
 
     - name: SonarCloud Scan
-      if: env.SONAR_TOKEN != ''
       uses: SonarSource/sonarqube-scan-action@v7
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

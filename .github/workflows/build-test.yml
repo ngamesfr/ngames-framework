@@ -14,6 +14,8 @@ jobs:
     steps:
     - name: Git checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
@@ -42,11 +44,7 @@ jobs:
     - name: Run test suite
       run: composer run test -- --log-junit ./reports/phpunit.xml --coverage-clover ./reports/phpunit.coverage.xml
 
-    - name: Fix code coverage paths for Sonar
-      run: sed -i 's/\/home\/runner\/work\/ngames-framework\/ngames-framework\//\/github\/workspace\//g' ./reports/*.xml || true
-
     - name: SonarCloud Scan
-      uses: sonarsource/sonarcloud-github-action@master
+      uses: SonarSource/sonarqube-scan-action@v7
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

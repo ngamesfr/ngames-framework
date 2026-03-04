@@ -150,7 +150,7 @@ class RequestTest extends \PHPUnit\Framework\TestCase
      */
     private function getRequest($method = 'GET', $uri = '/test')
     {
-        return new class(
+        return new class (
             ['get_key1' => 'get_val1'],
             ['post_key1' => 'post_val1'],
             ['cookie_key1' => 'cookie_val1'],

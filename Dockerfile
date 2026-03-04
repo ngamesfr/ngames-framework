@@ -4,10 +4,8 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 RUN apt-get update && \
     apt-get install -y libjpeg-dev libfreetype6-dev zlib1g-dev libpng-dev curl zip && \
-    pecl install apcu && \
     docker-php-ext-configure gd --with-jpeg && \
-    docker-php-ext-install gd pdo pdo_mysql opcache && \
-    docker-php-ext-enable apcu && \
+    docker-php-ext-install gd pdo pdo_mysql && \
     echo "access.log = /dev/null" >> /usr/local/etc/php-fpm.d/www.conf
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

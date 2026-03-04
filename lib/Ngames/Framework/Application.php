@@ -170,6 +170,7 @@ class Application
             if ($route == null) {
                 $response = Response::createNotFoundResponse($this->isDebug() ? 'No route matched the requested URI' : null);
             } else {
+                $request->mergeGetParameters($route->getParameters());
                 $actionResult = Controller::execute($route, $request);
 
                 // If not a response object (string typically), constructs it (but it's a default instance)

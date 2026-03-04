@@ -66,4 +66,36 @@ class RouterTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('test1-controller', $route->getControllerName());
         $this->assertEquals('test1-action', $route->getActionName());
     }
+
+    public function testUrl_namedRoute()
+    {
+        $router = new Router();
+        $router->addMatcher(new Matcher('/article/:id', 'app', 'article', 'show', 'article'));
+        $this->assertEquals('/article/42', $router->url('article', ['id' => '42']));
+    }
+
+    public function testUrl_namedRouteNoParams()
+    {
+        $router = new Router();
+        $router->addMatcher(new Matcher('/blog', 'app', 'news', 'index', 'blog'));
+        $this->assertEquals('/blog', $router->url('blog'));
+    }
+
+    public function testUrl_unknownName()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $router = new Router();
+        $router->url('unknown');
+    }
+
+    public function testGetRoute_aliasBeforeDefault()
+    {
+        $router = new Router();
+        $router->addMatcher(new Matcher('/blog', 'app', 'news', 'index', 'blog'));
+        $router->addMatcher(new Matcher('/:module/:controller/:action'));
+        $route = $router->getRoute('/blog');
+        $this->assertEquals('app', $route->getModuleName());
+        $this->assertEquals('news', $route->getControllerName());
+        $this->assertEquals('index', $route->getActionName());
+    }
 }

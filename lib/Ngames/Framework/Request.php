@@ -232,6 +232,17 @@ class Request
     }
 
     /**
+     * Merge additional parameters into the GET parameters.
+     *
+     * @param array $parameters
+     * @return void
+     */
+    public function mergeGetParameters(array $parameters)
+    {
+        $this->getParameters = array_merge($this->getParameters, $parameters);
+    }
+
+    /**
      * Whether the application is being run in command line or not
      *
      * @return boolean

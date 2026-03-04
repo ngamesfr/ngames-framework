@@ -38,6 +38,11 @@ class Router
     private $matchers = [];
 
     /**
+     * @var Matcher[]
+     */
+    private $namedMatchers = [];
+
+    /**
      * Adds a new matcher at the begining of the matcher list.
      *
      * @param Matcher $matcher
@@ -48,7 +53,37 @@ class Router
     {
         $this->matchers[] = $matcher;
 
+        if ($matcher->getName() !== null) {
+            $this->namedMatchers[$matcher->getName()] = $matcher;
+        }
+
         return $this;
+    }
+
+    /**
+     * Generate a URL for a named route.
+     *
+     * @param string $name
+     * @param array $params
+     * @return string
+     * @throws \InvalidArgumentException
+     */
+    public function url($name, array $params = [])
+    {
+        if (!isset($this->namedMatchers[$name])) {
+            throw new \InvalidArgumentException(sprintf('No route found with name "%s"', $name));
+        }
+
+        $pattern = $this->namedMatchers[$name]->getPattern();
+        $url = preg_replace_callback('/:([a-zA-Z_]+)/', function ($matches) use ($params) {
+            $key = $matches[1];
+            if (isset($params[$key])) {
+                return $params[$key];
+            }
+            return $matches[0];
+        }, $pattern);
+
+        return $url;
     }
 
     /**

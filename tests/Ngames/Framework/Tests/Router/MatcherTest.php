@@ -124,4 +124,67 @@ class MatcherTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('controller', $result->getControllerName());
         $this->assertEquals('action-match', $result->getActionName());
     }
+
+    // Alias / custom parameter cases
+    public function testMatch_staticAlias()
+    {
+        $matcher = new Matcher('/blog', 'application', 'news', 'index');
+        $result = $matcher->match('/blog');
+        $this->assertNotNull($result);
+        $this->assertEquals('application', $result->getModuleName());
+        $this->assertEquals('news', $result->getControllerName());
+        $this->assertEquals('index', $result->getActionName());
+        $this->assertEmpty($result->getParameters());
+    }
+
+    public function testMatch_customParameter()
+    {
+        $matcher = new Matcher('/article/:id', 'application', 'article', 'show');
+        $result = $matcher->match('/article/42');
+        $this->assertNotNull($result);
+        $this->assertEquals('application', $result->getModuleName());
+        $this->assertEquals('article', $result->getControllerName());
+        $this->assertEquals('show', $result->getActionName());
+        $this->assertEquals(['id' => '42'], $result->getParameters());
+        $this->assertEquals('42', $result->getParameter('id'));
+        $this->assertNull($result->getParameter('unknown'));
+        $this->assertEquals('default', $result->getParameter('unknown', 'default'));
+    }
+
+    public function testMatch_multipleCustomParameters()
+    {
+        $matcher = new Matcher('/article/:id/:slug', 'application', 'article', 'show');
+        $result = $matcher->match('/article/42/my-title');
+        $this->assertNotNull($result);
+        $this->assertEquals(['id' => '42', 'slug' => 'my-title'], $result->getParameters());
+    }
+
+    public function testMatch_customParameterNoMatch()
+    {
+        $matcher = new Matcher('/article/:id', 'application', 'article', 'show');
+        $this->assertNull($matcher->match('/blog/42'));
+    }
+
+    public function testMatch_defaultPatternStillWorks()
+    {
+        $matcher = new Matcher('/:module/:controller/:action');
+        $result = $matcher->match('/app/home/index');
+        $this->assertNotNull($result);
+        $this->assertEquals('app', $result->getModuleName());
+        $this->assertEquals('home', $result->getControllerName());
+        $this->assertEquals('index', $result->getActionName());
+        $this->assertEmpty($result->getParameters());
+    }
+
+    public function testGetName()
+    {
+        $matcher = new Matcher('/blog', 'app', 'news', 'index', 'blog');
+        $this->assertEquals('blog', $matcher->getName());
+    }
+
+    public function testGetName_null()
+    {
+        $matcher = new Matcher('/blog', 'app', 'news', 'index');
+        $this->assertNull($matcher->getName());
+    }
 }

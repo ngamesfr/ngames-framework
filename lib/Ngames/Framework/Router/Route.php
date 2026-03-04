@@ -50,16 +50,23 @@ class Route
     protected $actionName;
 
     /**
+     * @var array
+     */
+    private $parameters = [];
+
+    /**
      *
      * @param string $moduleName
      * @param string $controllerName
      * @param string $actionName
+     * @param array $parameters
      */
-    public function __construct($moduleName, $controllerName, $actionName)
+    public function __construct($moduleName, $controllerName, $actionName, array $parameters = [])
     {
         $this->moduleName = $moduleName;
         $this->controllerName = $controllerName;
         $this->actionName = $actionName;
+        $this->parameters = $parameters;
     }
 
     /**
@@ -87,5 +94,23 @@ class Route
     public function getActionName()
     {
         return $this->actionName;
+    }
+
+    /**
+     * @return array
+     */
+    public function getParameters()
+    {
+        return $this->parameters;
+    }
+
+    /**
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getParameter($name, $default = null)
+    {
+        return array_key_exists($name, $this->parameters) ? $this->parameters[$name] : $default;
     }
 }

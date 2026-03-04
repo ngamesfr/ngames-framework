@@ -44,6 +44,8 @@ class Matcher
 
     private $actionName;
 
+    private $name;
+
     /**
      * Create a new matcher that will be used to test the route eligility.
      *
@@ -58,15 +60,33 @@ class Matcher
      * @param string|null $moduleName
      * @param string|null $controllerName
      * @param string|null $actionName
+     * @param string|null $name
      */
-    public function __construct($pattern, $moduleName = null, $controllerName = null, $actionName = null)
+    public function __construct($pattern, $moduleName = null, $controllerName = null, $actionName = null, $name = null)
     {
         $this->pattern = $pattern;
         $this->moduleName = $moduleName;
         $this->controllerName = $controllerName;
         $this->actionName = $actionName;
+        $this->name = $name;
 
         $this->check();
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPattern()
+    {
+        return $this->pattern;
     }
 
     /**
@@ -84,6 +104,7 @@ class Matcher
         $currentModuleName = $this->moduleName;
         $currentControllerName = $this->controllerName;
         $currentActionName = $this->actionName;
+        $parameters = [];
         $countPattern = count($preparedPattern);
         $match = true;
 
@@ -101,6 +122,8 @@ class Matcher
                         $currentControllerName = $currentUriPart;
                     } elseif ($currentPatternPart === self::ACTION_KEY) {
                         $currentActionName = $currentUriPart;
+                    } elseif (str_starts_with($currentPatternPart, ':')) {
+                        $parameters[substr($currentPatternPart, 1)] = $currentUriPart;
                     } else {
                         $match = false;
                         break;
@@ -109,7 +132,7 @@ class Matcher
             }
         }
 
-        return $match ? new Route($currentModuleName, $currentControllerName, $currentActionName) : null;
+        return $match ? new Route($currentModuleName, $currentControllerName, $currentActionName, $parameters) : null;
     }
 
     /**

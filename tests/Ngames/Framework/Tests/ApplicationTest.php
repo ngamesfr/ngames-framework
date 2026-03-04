@@ -39,9 +39,7 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
         // Reset the instance
         $reflection = new \ReflectionClass(Application::class);
         $instance = $reflection->getProperty('instance');
-        $instance->setAccessible(true);
         $instance->setValue(null, null);
-        $instance->setAccessible(false);
         Logger::initialize(null, Logger::LEVEL_ERROR);
     }
 

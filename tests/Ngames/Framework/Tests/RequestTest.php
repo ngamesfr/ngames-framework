@@ -150,15 +150,17 @@ class RequestTest extends \PHPUnit\Framework\TestCase
      */
     private function getRequest($method = 'GET', $uri = '/test')
     {
-        $request = $this->getMockBuilder(Request::class)->onlyMethods(['isCli'])->setConstructorArgs(array(
-            array('get_key1' => 'get_val1'),
-            array('post_key1' => 'post_val1'),
-            array('cookie_key1' => 'cookie_val1'),
-            array('REQUEST_METHOD' => $method, 'REQUEST_URI' => $uri, 'HTTP_X_REQUESTED_WITH' => 'requested-with-val'),
-            array('file' => array())
-        ))->getMock();
-        $request->method('isCli')->willReturn(false);
-
-        return $request;
+        return new class(
+            ['get_key1' => 'get_val1'],
+            ['post_key1' => 'post_val1'],
+            ['cookie_key1' => 'cookie_val1'],
+            ['REQUEST_METHOD' => $method, 'REQUEST_URI' => $uri, 'HTTP_X_REQUESTED_WITH' => 'requested-with-val'],
+            ['file' => []]
+        ) extends Request {
+            public function isCli(): bool
+            {
+                return false;
+            }
+        };
     }
 }

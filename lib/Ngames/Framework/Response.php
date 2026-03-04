@@ -104,6 +104,14 @@ class Response
     }
 
     /**
+     * @return array
+     */
+    public function getHeaders()
+    {
+        return $this->headers;
+    }
+
+    /**
      * Changes the response status code
      *
      * @param int $statusCode

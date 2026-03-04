@@ -55,7 +55,7 @@ class Connection
             $dsn = sprintf('mysql:host=%s;dbname=%s', $configuration->database->host, $configuration->database->name);
 
             self::$connection = new \PDO($dsn, $configuration->database->username, $configuration->database->password, [
-                \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'UTF8\'',
+                \Pdo\Mysql::ATTR_INIT_COMMAND => 'SET NAMES \'UTF8\'',
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
             ]);
         }

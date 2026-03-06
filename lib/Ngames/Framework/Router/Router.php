@@ -75,15 +75,13 @@ class Router
         }
 
         $pattern = $this->namedMatchers[$name]->getPattern();
-        $url = preg_replace_callback('/:([a-zA-Z_]+)/', function ($matches) use ($params) {
+        return preg_replace_callback('/:([a-zA-Z_]+)/', function ($matches) use ($params) {
             $key = $matches[1];
             if (isset($params[$key])) {
                 return $params[$key];
             }
             return $matches[0];
         }, $pattern);
-
-        return $url;
     }
 
     /**

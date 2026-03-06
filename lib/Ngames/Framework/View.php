@@ -458,7 +458,7 @@ class View
         // Render
         ob_start();
         try {
-            include $scriptFullPath;
+            include $scriptFullPath; // NOSONAR - view templates are intentionally included multiple times
 
             // Check that after script rendering, a placeholder was not being defined
             if ($this->currentPlaceHolder != null) {

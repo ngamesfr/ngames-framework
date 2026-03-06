@@ -1,5 +1,5 @@
 # NGames Framework - A simple PHP framework
-[![Build Status](https://img.shields.io/github/workflow/status/ngamesfr/ngames-framework/Build%20and%20test)](https://github.com/ngamesfr/ngames-framework/actions?query=workflow%3A%22Build+and+test%22)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/ngamesfr/ngames-framework/build-test.yml)](https://github.com/ngamesfr/ngames-framework/actions?query=workflow%3A%22Build+and+test%22)
 [![License](https://img.shields.io/github/license/ngamesfr/ngames-framework)](https://packagist.org/packages/ngames/framework)
 [![Last release](https://img.shields.io/github/v/release/ngamesfr/ngames-framework)](https://packagist.org/packages/ngames/framework)
 

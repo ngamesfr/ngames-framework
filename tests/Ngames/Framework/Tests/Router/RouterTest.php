@@ -98,4 +98,37 @@ class RouterTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('news', $route->getControllerName());
         $this->assertEquals('index', $route->getActionName());
     }
+
+    // HTTP method routing tests
+    public function testGetRoute_withMethodPicksCorrectMatcher()
+    {
+        $router = new Router();
+        $router->addMatcher(new Matcher('/test', 'mod', 'ctrl', 'get-action', null, 'GET'));
+        $router->addMatcher(new Matcher('/test', 'mod', 'ctrl', 'delete-action', null, 'DELETE'));
+
+        $getRoute = $router->getRoute('/test', 'GET');
+        $this->assertNotNull($getRoute);
+        $this->assertEquals('get-action', $getRoute->getActionName());
+
+        $deleteRoute = $router->getRoute('/test', 'DELETE');
+        $this->assertNotNull($deleteRoute);
+        $this->assertEquals('delete-action', $deleteRoute->getActionName());
+    }
+
+    public function testGetRoute_withoutMethodStillWorks()
+    {
+        $router = new Router();
+        $router->addMatcher(new Matcher('/test', 'mod', 'ctrl', 'act'));
+        $route = $router->getRoute('/test');
+        $this->assertNotNull($route);
+        $this->assertEquals('act', $route->getActionName());
+    }
+
+    public function testGetRoute_methodConstraintNoMatch()
+    {
+        $router = new Router();
+        $router->addMatcher(new Matcher('/test', 'mod', 'ctrl', 'act', null, 'GET'));
+        $route = $router->getRoute('/test', 'POST');
+        $this->assertNull($route);
+    }
 }

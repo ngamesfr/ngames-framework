@@ -1,0 +1,235 @@
+<?php
+
+namespace Ngames\Framework\Router;
+
+use Ngames\Framework\Router\Attribute\Delete;
+use Ngames\Framework\Router\Attribute\Get;
+use Ngames\Framework\Router\Attribute\Middleware;
+use Ngames\Framework\Router\Attribute\Post;
+use Ngames\Framework\Router\Attribute\Put;
+use Ngames\Framework\Router\Attribute\Route as RouteAttribute;
+
+class RouteCollector
+{
+    private const HTTP_METHOD_ATTRIBUTES = [
+        Get::class => 'GET',
+        Post::class => 'POST',
+        Put::class => 'PUT',
+        Delete::class => 'DELETE',
+    ];
+
+    private string $cachePrefix;
+
+    private bool $apcuWarningLogged = false;
+
+    public function __construct(string $cachePrefix = 'ngames_routes')
+    {
+        $this->cachePrefix = $cachePrefix;
+    }
+
+    /**
+     * Collect annotated routes from the given directories and register them on the router.
+     *
+     * @param array $directories
+     * @param Router $router
+     */
+    public function collect(array $directories, Router $router): void
+    {
+        $routes = $this->loadRoutes($directories);
+
+        foreach ($routes as $routeData) {
+            $matcher = new Matcher(
+                $routeData['pattern'],
+                null,
+                null,
+                null,
+                $routeData['name'],
+                $routeData['method'],
+                $routeData['controllerClass'],
+                $routeData['actionMethod'],
+                $routeData['middlewares']
+            );
+            $router->addMatcher($matcher);
+        }
+    }
+
+    /**
+     * Clear the APCu cache.
+     */
+    public function clearCache(): void
+    {
+        if (function_exists('apcu_delete')) {
+            apcu_delete($this->getCacheKey());
+        }
+    }
+
+    /**
+     * Load routes, using APCu cache if available.
+     *
+     * @param array $directories
+     * @return array
+     */
+    private function loadRoutes(array $directories): array
+    {
+        $cacheKey = $this->getCacheKey();
+
+        // Try APCu cache
+        if (function_exists('apcu_fetch') && function_exists('apcu_enabled') && apcu_enabled()) {
+            $cached = apcu_fetch($cacheKey, $success);
+            if ($success) {
+                return $cached;
+            }
+
+            $routes = $this->scanDirectories($directories);
+            apcu_store($cacheKey, $routes);
+            return $routes;
+        }
+
+        // APCu not available — log warning once
+        if (!$this->apcuWarningLogged) {
+            $this->apcuWarningLogged = true;
+            \Ngames\Framework\Logger::logWarning('APCu is not available, route caching disabled. Routes will be scanned on every request.');
+        }
+
+        return $this->scanDirectories($directories);
+    }
+
+    /**
+     * Scan directories for annotated controller classes.
+     *
+     * @param array $directories
+     * @return array
+     */
+    private function scanDirectories(array $directories): array
+    {
+        $routes = [];
+
+        foreach ($directories as $directory) {
+            if (!is_dir($directory)) {
+                continue;
+            }
+            $this->scanDirectory($directory, $routes);
+        }
+
+        return $routes;
+    }
+
+    /**
+     * Recursively scan a directory for PHP files.
+     *
+     * @param string $directory
+     * @param array &$routes
+     */
+    private function scanDirectory(string $directory, array &$routes): void
+    {
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $className = $this->getClassNameFromFile($file->getPathname());
+            if ($className === null || !class_exists($className)) {
+                continue;
+            }
+
+            $this->processClass($className, $routes);
+        }
+    }
+
+    /**
+     * Extract the fully qualified class name from a PHP file.
+     *
+     * @param string $filePath
+     * @return string|null
+     */
+    private function getClassNameFromFile(string $filePath): ?string
+    {
+        $contents = file_get_contents($filePath);
+        $namespace = null;
+        $class = null;
+
+        if (preg_match('/namespace\s+([^;]+);/', $contents, $matches)) {
+            $namespace = $matches[1];
+        }
+
+        if (preg_match('/class\s+(\w+)/', $contents, $matches)) {
+            $class = $matches[1];
+        }
+
+        if ($class === null) {
+            return null;
+        }
+
+        return $namespace !== null ? $namespace . '\\' . $class : $class;
+    }
+
+    /**
+     * Process a class for route attributes.
+     *
+     * @param string $className
+     * @param array &$routes
+     */
+    private function processClass(string $className, array &$routes): void
+    {
+        $reflectionClass = new \ReflectionClass($className);
+        $routeAttributes = $reflectionClass->getAttributes(RouteAttribute::class);
+
+        if (empty($routeAttributes)) {
+            return;
+        }
+
+        $routeAttribute = $routeAttributes[0]->newInstance();
+        $basePath = $routeAttribute->path;
+
+        // Collect class-level middleware
+        $classMiddlewares = [];
+        foreach ($reflectionClass->getAttributes(Middleware::class) as $attr) {
+            $classMiddlewares[] = $attr->newInstance()->class;
+        }
+
+        // Process methods
+        foreach ($reflectionClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+            foreach (self::HTTP_METHOD_ATTRIBUTES as $attributeClass => $httpMethod) {
+                $methodAttributes = $method->getAttributes($attributeClass);
+
+                foreach ($methodAttributes as $methodAttribute) {
+                    $attr = $methodAttribute->newInstance();
+                    $fullPath = rtrim($basePath, '/') . '/' . ltrim($attr->path, '/');
+                    $fullPath = rtrim($fullPath, '/');
+                    if ($fullPath === '') {
+                        $fullPath = '/';
+                    }
+
+                    // Collect method-level middleware
+                    $methodMiddlewares = [];
+                    foreach ($method->getAttributes(Middleware::class) as $mwAttr) {
+                        $methodMiddlewares[] = $mwAttr->newInstance()->class;
+                    }
+
+                    $allMiddlewares = array_merge($classMiddlewares, $methodMiddlewares);
+
+                    $routes[] = [
+                        'pattern' => $fullPath,
+                        'method' => $httpMethod,
+                        'controllerClass' => $className,
+                        'actionMethod' => $method->getName(),
+                        'middlewares' => $allMiddlewares,
+                        'name' => null,
+                    ];
+                }
+            }
+        }
+    }
+
+    /**
+     * @return string
+     */
+    private function getCacheKey(): string
+    {
+        return $this->cachePrefix . '_compiled';
+    }
+}

@@ -55,18 +55,46 @@ class Route
     private $parameters = [];
 
     /**
+     * @var string|null
+     */
+    private $controllerClass;
+
+    /**
+     * @var string|null
+     */
+    private $actionMethod;
+
+    /**
+     * @var array
+     */
+    private $middlewares = [];
+
+    /**
      *
      * @param string $moduleName
      * @param string $controllerName
      * @param string $actionName
      * @param array $parameters
+     * @param string|null $controllerClass
+     * @param string|null $actionMethod
+     * @param array $middlewares
      */
-    public function __construct($moduleName, $controllerName, $actionName, array $parameters = [])
-    {
+    public function __construct(
+        $moduleName,
+        $controllerName,
+        $actionName,
+        array $parameters = [],
+        $controllerClass = null,
+        $actionMethod = null,
+        array $middlewares = []
+    ) {
         $this->moduleName = $moduleName;
         $this->controllerName = $controllerName;
         $this->actionName = $actionName;
         $this->parameters = $parameters;
+        $this->controllerClass = $controllerClass;
+        $this->actionMethod = $actionMethod;
+        $this->middlewares = $middlewares;
     }
 
     /**
@@ -112,5 +140,37 @@ class Route
     public function getParameter($name, $default = null)
     {
         return array_key_exists($name, $this->parameters) ? $this->parameters[$name] : $default;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getControllerClass()
+    {
+        return $this->controllerClass;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getActionMethod()
+    {
+        return $this->actionMethod;
+    }
+
+    /**
+     * @return array
+     */
+    public function getMiddlewares()
+    {
+        return $this->middlewares;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isAnnotated()
+    {
+        return $this->controllerClass !== null;
     }
 }

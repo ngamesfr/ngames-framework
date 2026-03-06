@@ -24,6 +24,7 @@
 
 namespace Ngames\Framework;
 
+use Ngames\Framework\Router\RouteCollector;
 use Ngames\Framework\Router\Router;
 use Ngames\Framework\Storage\IniFile;
 
@@ -147,6 +148,21 @@ class Application
     }
 
     /**
+     * Register annotated controllers from the given directories.
+     *
+     * @param array|null $directories
+     */
+    public function registerAnnotatedControllers(?array $directories = null): void
+    {
+        if ($directories === null) {
+            $directories = [ROOT_DIR . '/src/Controller'];
+        }
+
+        $collector = new RouteCollector();
+        $collector->collect($directories, $this->router);
+    }
+
+    /**
      * Whether application is in debug mode or not.
      *
      * @return boolean
@@ -164,7 +180,7 @@ class Application
         try {
             // Execute the module/controller/action
             $request = new \Ngames\Framework\Request($_GET, $_POST, $_COOKIE, $_SERVER, $_FILES, file_get_contents('php://input'));
-            $route = $this->router->getRoute($request->getRequestUri());
+            $route = $this->router->getRoute($request->getRequestUri(), $request->getMethod());
             $response = null;
 
             if ($route == null) {

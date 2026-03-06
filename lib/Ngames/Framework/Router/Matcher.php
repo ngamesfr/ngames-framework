@@ -46,6 +46,14 @@ class Matcher
 
     private $name;
 
+    private $method;
+
+    private $controllerClass;
+
+    private $actionMethod;
+
+    private $middlewares;
+
     /**
      * Create a new matcher that will be used to test the route eligility.
      *
@@ -61,16 +69,36 @@ class Matcher
      * @param string|null $controllerName
      * @param string|null $actionName
      * @param string|null $name
+     * @param string|null $method
+     * @param string|null $controllerClass
+     * @param string|null $actionMethod
+     * @param array $middlewares
      */
-    public function __construct($pattern, $moduleName = null, $controllerName = null, $actionName = null, $name = null)
-    {
+    public function __construct(
+        $pattern,
+        $moduleName = null,
+        $controllerName = null,
+        $actionName = null,
+        $name = null,
+        $method = null,
+        $controllerClass = null,
+        $actionMethod = null,
+        array $middlewares = []
+    ) {
         $this->pattern = $pattern;
         $this->moduleName = $moduleName;
         $this->controllerName = $controllerName;
         $this->actionName = $actionName;
         $this->name = $name;
+        $this->method = $method !== null ? strtoupper($method) : null;
+        $this->controllerClass = $controllerClass;
+        $this->actionMethod = $actionMethod;
+        $this->middlewares = $middlewares;
 
-        $this->check();
+        // Skip validation for annotated routes (they don't use module/controller/action)
+        if ($controllerClass === null) {
+            $this->check();
+        }
     }
 
     /**
@@ -90,15 +118,29 @@ class Matcher
     }
 
     /**
+     * @return string|null
+     */
+    public function getMethod()
+    {
+        return $this->method;
+    }
+
+    /**
      * Tries to match the input URI.
      * Output is null if no match, a route otherwise.
      *
      * @param string $uri
+     * @param string|null $method
      *
      * @return Route|null
      */
-    public function match($uri)
+    public function match($uri, $method = null)
     {
+        // Check HTTP method constraint
+        if ($this->method !== null && $method !== null && strtoupper($method) !== $this->method) {
+            return null;
+        }
+
         $preparedPattern = $this->prepareForMatching($this->pattern);
         $uri = $this->prepareForMatching($uri);
         $currentModuleName = $this->moduleName;
@@ -132,7 +174,24 @@ class Matcher
             }
         }
 
-        return $match ? new Route($currentModuleName, $currentControllerName, $currentActionName, $parameters) : null;
+        if (!$match) {
+            return null;
+        }
+
+        // For annotated routes, create a Route with controller class metadata
+        if ($this->controllerClass !== null) {
+            return new Route(
+                $currentModuleName,
+                $currentControllerName,
+                $currentActionName,
+                $parameters,
+                $this->controllerClass,
+                $this->actionMethod,
+                $this->middlewares
+            );
+        }
+
+        return new Route($currentModuleName, $currentControllerName, $currentActionName, $parameters);
     }
 
     /**

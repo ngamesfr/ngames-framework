@@ -225,6 +225,11 @@ class Controller
      */
     public static function execute(Route $route, Request $request)
     {
+        // Annotated route dispatch path
+        if ($route->isAnnotated()) {
+            return self::executeAnnotated($route, $request);
+        }
+
         // Get module, controller and action from the route
         $moduleName = $route->getModuleName();
         $controllerName = $route->getControllerName();
@@ -261,5 +266,127 @@ class Controller
         }
 
         return $result;
+    }
+
+    /**
+     * Execute an annotated route with parameter injection and middleware support.
+     *
+     * @param Route $route
+     * @param Request $request
+     * @return mixed
+     */
+    private static function executeAnnotated(Route $route, Request $request)
+    {
+        $controllerClassName = $route->getControllerClass();
+        $actionMethodName = $route->getActionMethod();
+
+        // Handle not found
+        if (!class_exists($controllerClassName) || !method_exists($controllerClassName, $actionMethodName)) {
+            $message = 'Not found: ' . $controllerClassName . '::' . $actionMethodName . '()';
+            \Ngames\Framework\Logger::logWarning($message);
+
+            return Response::createNotFoundResponse(\Ngames\Framework\Application::getInstance()->isDebug() ? $message : null);
+        }
+
+        // Resolve parameters via reflection
+        $args = self::resolveParameters($controllerClassName, $actionMethodName, $route);
+        if ($args instanceof Response) {
+            return $args;
+        }
+
+        // Create the controller
+        $controllerInstance = new $controllerClassName();
+        $controllerInstance->setRequest($request);
+        $controllerInstance->setRoute($route);
+
+        // Build the innermost callable (preExecute + action)
+        $innerAction = function (Request $request) use ($controllerInstance, $actionMethodName, $args) {
+            $result = $controllerInstance->preExecute();
+            if ($result === null) {
+                $result = $controllerInstance->$actionMethodName(...$args);
+            }
+
+            // Ensure we return a Response
+            if ($result instanceof Response) {
+                return $result;
+            } elseif (is_string($result)) {
+                $response = new Response();
+                $response->setHeader('Content-Type', 'text/html; charset=utf-8');
+                $response->setContent($result);
+                return $response;
+            }
+
+            return new Response();
+        };
+
+        // Build middleware chain
+        $middlewares = $route->getMiddlewares();
+        if (empty($middlewares)) {
+            return $innerAction($request);
+        }
+
+        // Build the chain from inside out
+        $next = $innerAction;
+        foreach (array_reverse($middlewares) as $middlewareClass) {
+            $currentNext = $next;
+            $next = function (Request $request) use ($middlewareClass, $currentNext) {
+                $middleware = new $middlewareClass();
+                return $middleware->handle($request, $currentNext);
+            };
+        }
+
+        return $next($request);
+    }
+
+    /**
+     * Resolve action method parameters from route parameters.
+     *
+     * @param string $controllerClassName
+     * @param string $actionMethodName
+     * @param Route $route
+     * @return array|Response
+     */
+    private static function resolveParameters($controllerClassName, $actionMethodName, Route $route)
+    {
+        $reflectionMethod = new \ReflectionMethod($controllerClassName, $actionMethodName);
+        $parameters = $reflectionMethod->getParameters();
+        $routeParams = $route->getParameters();
+        $args = [];
+
+        foreach ($parameters as $param) {
+            $name = $param->getName();
+            if (array_key_exists($name, $routeParams)) {
+                $value = $routeParams[$name];
+                $type = $param->getType();
+                if ($type instanceof \ReflectionNamedType) {
+                    $value = self::castValue($value, $type->getName());
+                }
+                $args[] = $value;
+            } elseif ($param->isDefaultValueAvailable()) {
+                $args[] = $param->getDefaultValue();
+            } else {
+                return Response::createBadRequestResponse('Missing required parameter: ' . $name);
+            }
+        }
+
+        return $args;
+    }
+
+    /**
+     * Cast a string value to the given type.
+     *
+     * @param string $value
+     * @param string $type
+     * @return mixed
+     */
+    private static function castValue($value, $type)
+    {
+        return match ($type) {
+            'int' => (int) $value,
+            'float' => (float) $value,
+            'bool' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            'string' => (string) $value,
+            default => $value,
+        };
     }
 }

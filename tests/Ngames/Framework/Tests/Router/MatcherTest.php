@@ -187,4 +187,47 @@ class MatcherTest extends \PHPUnit\Framework\TestCase
         $matcher = new Matcher('/blog', 'app', 'news', 'index');
         $this->assertNull($matcher->getName());
     }
+
+    // HTTP method constraint tests
+    public function testMatchWithMethodGet_matchesGet()
+    {
+        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act', null, 'GET');
+        $result = $matcher->match('/test', 'GET');
+        $this->assertNotNull($result);
+    }
+
+    public function testMatchWithMethodGet_rejectsPost()
+    {
+        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act', null, 'GET');
+        $result = $matcher->match('/test', 'POST');
+        $this->assertNull($result);
+    }
+
+    public function testMatchWithMethodNull_matchesAnyMethod()
+    {
+        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act');
+        $this->assertNotNull($matcher->match('/test', 'GET'));
+        $this->assertNotNull($matcher->match('/test', 'POST'));
+        $this->assertNotNull($matcher->match('/test', 'DELETE'));
+        $this->assertNotNull($matcher->match('/test'));
+    }
+
+    public function testMatchWithMethodIsCaseInsensitive()
+    {
+        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act', null, 'get');
+        $this->assertNotNull($matcher->match('/test', 'GET'));
+        $this->assertNotNull($matcher->match('/test', 'get'));
+    }
+
+    public function testGetMethod()
+    {
+        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act', null, 'POST');
+        $this->assertEquals('POST', $matcher->getMethod());
+    }
+
+    public function testGetMethod_null()
+    {
+        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act');
+        $this->assertNull($matcher->getMethod());
+    }
 }

@@ -178,6 +178,8 @@ class Application
     public function run()
     {
         try {
+            $this->registerAnnotatedControllers();
+
             // Execute the module/controller/action
             $request = new \Ngames\Framework\Request($_GET, $_POST, $_COOKIE, $_SERVER, $_FILES, file_get_contents('php://input'));
             $route = $this->router->getRoute($request->getRequestUri(), $request->getMethod());

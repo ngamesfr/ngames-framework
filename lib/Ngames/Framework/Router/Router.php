@@ -48,13 +48,14 @@ class Router
     private $registeredPatterns = [];
 
     /**
-     * Adds a new matcher at the begining of the matcher list.
+     * Adds a new matcher to the matcher list.
      *
      * @param Matcher $matcher
+     * @param bool $prepend If true, insert at the beginning instead of the end.
      *
      * @return Router
      */
-    public function addMatcher(Matcher $matcher)
+    public function addMatcher(Matcher $matcher, bool $prepend = false)
     {
         $key = ($matcher->getMethod() ?? 'ANY') . ' ' . $matcher->getPattern();
 
@@ -63,7 +64,12 @@ class Router
         }
 
         $this->registeredPatterns[$key] = true;
-        $this->matchers[] = $matcher;
+
+        if ($prepend) {
+            array_unshift($this->matchers, $matcher);
+        } else {
+            $this->matchers[] = $matcher;
+        }
 
         if ($matcher->getName() !== null) {
             $this->namedMatchers[$matcher->getName()] = $matcher;

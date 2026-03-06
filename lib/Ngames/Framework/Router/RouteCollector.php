@@ -47,7 +47,7 @@ class RouteCollector
                 $routeData['controllerClass'],
                 $routeData['actionMethod'],
                 $routeData['middlewares']
-            ));
+            ), prepend: true);
         }
     }
 

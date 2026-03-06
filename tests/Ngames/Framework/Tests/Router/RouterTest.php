@@ -157,4 +157,35 @@ class RouterTest extends \PHPUnit\Framework\TestCase
         $router->addMatcher(new Matcher('/api/users/:id', 'GET', 'App\\UserCtrl', 'show', [], 'user.show'));
         $this->assertEquals('/api/users/42', $router->url('user.show', ['id' => '42']));
     }
+
+    public function testAddMatcher_prependBeforeExisting()
+    {
+        $router = new Router();
+        // User adds a catch-all matcher first
+        $router->addMatcher(@Matcher::forConventionRoute('/:module/:controller/:action'));
+
+        // Annotated route is prepended — should match before the catch-all
+        $router->addMatcher(new Matcher('/blog', 'GET', 'Controller\\App\\BlogController', 'listAction'), prepend: true);
+
+        $route = $router->getRoute('/blog', 'GET');
+        $this->assertNotNull($route);
+        $this->assertTrue($route->isAnnotated());
+        $this->assertEquals('Controller\\App\\BlogController', $route->getControllerClass());
+    }
+
+    public function testAddMatcher_prependFallbackStillReachable()
+    {
+        $router = new Router();
+        $router->addMatcher(@Matcher::forConventionRoute('/fallback', 'mod', 'ctrl', 'fallback'));
+
+        $router->addMatcher(new Matcher('/first', 'GET', 'App\\First', 'indexAction'), prepend: true);
+
+        $route = $router->getRoute('/first', 'GET');
+        $this->assertEquals('App\\First', $route->getControllerClass());
+
+        // Fallback still reachable
+        $route = $router->getRoute('/fallback');
+        $this->assertNotNull($route);
+        $this->assertEquals('fallback', $route->getActionName());
+    }
 }

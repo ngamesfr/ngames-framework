@@ -196,11 +196,59 @@ class View // NOSONAR - view class with helpers, splitting would be overengineer
      */
     public function setScriptFromRoute(Route $route)
     {
+        if ($route->isAnnotated()) {
+            return $this->setScript(self::deriveScriptFromClass(
+                $route->getControllerClass(),
+                $route->getActionMethod()
+            ));
+        }
+
         $moduleName = $route->getModuleName();
         $controllerName = $route->getControllerName();
         $actionName = $route->getActionName();
 
         return $this->setScript($moduleName . '/' . $controllerName . '/' . $actionName);
+    }
+
+    /**
+     * Derive the view script path from an annotated controller class and action method.
+     *
+     * Example: Controller\Application\BlogController::displayAction => application/blog/display
+     */
+    private static function deriveScriptFromClass(string $controllerClass, string $actionMethod): string
+    {
+        // Strip leading Controller\ namespace prefix
+        $class = $controllerClass;
+        $prefix = Controller::CONTROLLER_NAMESPACE . '\\';
+        if (str_starts_with($class, $prefix)) {
+            $class = substr($class, strlen($prefix));
+        }
+
+        // Split remaining namespace + class name into segments
+        $parts = explode('\\', $class);
+
+        // Strip Controller suffix from the class name (last segment)
+        $className = array_pop($parts);
+        $suffix = Controller::CONTROLLER_SUFFIX;
+        if (str_ends_with($className, $suffix)) {
+            $className = substr($className, 0, -strlen($suffix));
+        }
+        $parts[] = $className;
+
+        // Strip Action suffix from the method name
+        $action = $actionMethod;
+        $actionSuffix = Controller::ACTION_SUFFIX;
+        if (str_ends_with($action, $actionSuffix)) {
+            $action = substr($action, 0, -strlen($actionSuffix));
+        }
+        $parts[] = $action;
+
+        // Convert each segment from CamelCase to kebab-case
+        $segments = array_map(function (string $part): string {
+            return strtolower(preg_replace('/(?<=\w)([A-Z])/', '-$1', $part));
+        }, $parts);
+
+        return implode('/', $segments);
     }
 
     /**

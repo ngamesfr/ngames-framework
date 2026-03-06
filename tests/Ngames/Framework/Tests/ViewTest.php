@@ -88,6 +88,39 @@ class ViewTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('module/controller/action', $view->getScript());
     }
 
+    public function testSetScriptFromRoute_annotated()
+    {
+        $route = Route::create(
+            'Controller\\Application\\BlogController',
+            'displayAction'
+        );
+        $view = new View();
+        $view->setScriptFromRoute($route);
+        $this->assertEquals('application/blog/display', $view->getScript());
+    }
+
+    public function testSetScriptFromRoute_annotatedMultiWord()
+    {
+        $route = Route::create(
+            'Controller\\MyModule\\UserProfileController',
+            'editSettingsAction'
+        );
+        $view = new View();
+        $view->setScriptFromRoute($route);
+        $this->assertEquals('my-module/user-profile/edit-settings', $view->getScript());
+    }
+
+    public function testSetScriptFromRoute_annotatedNoSuffix()
+    {
+        $route = Route::create(
+            'App\\Blog',
+            'display'
+        );
+        $view = new View();
+        $view->setScriptFromRoute($route);
+        $this->assertEquals('app/blog/display', $view->getScript());
+    }
+
     public function testGetDirectory()
     {
         $view = new View();

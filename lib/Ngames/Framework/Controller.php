@@ -205,9 +205,10 @@ class Controller
             return self::notFoundResponse($controllerClassName, $actionMethodName);
         }
 
-        $args = self::resolveParameters($controllerClassName, $actionMethodName, $route);
-        if ($args instanceof Response) {
-            return $args;
+        try {
+            $args = self::resolveParameters($controllerClassName, $actionMethodName, $route);
+        } catch (\InvalidArgumentException $e) {
+            return Response::createBadRequestResponse($e->getMessage());
         }
 
         $controllerInstance = self::createController($controllerClassName, $route, $request);
@@ -313,9 +314,10 @@ class Controller
     /**
      * Resolve action method parameters from route parameters.
      *
-     * @return array|Response
+     * @return array
+     * @throws \InvalidArgumentException
      */
-    private static function resolveParameters(string $className, string $methodName, Route $route)
+    private static function resolveParameters(string $className, string $methodName, Route $route): array
     {
         $reflectionMethod = new \ReflectionMethod($className, $methodName);
         $routeParams = $route->getParameters();
@@ -333,7 +335,7 @@ class Controller
             } elseif ($param->isDefaultValueAvailable()) {
                 $args[] = $param->getDefaultValue();
             } else {
-                return Response::createBadRequestResponse('Missing required parameter: ' . $name);
+                throw new \InvalidArgumentException('Missing required parameter: ' . $name);
             }
         }
 

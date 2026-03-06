@@ -88,25 +88,28 @@ class IniFile extends PhpArrayRecursive implements StorageInterface
                 }
             }
 
-            if (is_array($value)) {
-                $currentResult = $this->processParsedFile($value);
-            } else {
-                if (strpos($value, '%') === false) {
-                    $currentResult = $value;
-                } else {
-                    $currentResult = preg_replace_callback('/%(.*?)%/s', function ($match) {
-                        if (getenv($match[1])) {
-                            return getenv($match[1]);
-                        } elseif (defined($match[1])) {
-                            return constant($match[1]);
-                        } else {
-                            return $match[0];
-                        }
-                    }, $value);
-                }
-            }
+            $currentResult = is_array($value)
+                ? $this->processParsedFile($value)
+                : $this->resolveValue($value);
         }
 
         return $result;
+    }
+
+    protected function resolveValue(string $value): string
+    {
+        if (strpos($value, '%') === false) {
+            return $value;
+        }
+
+        return preg_replace_callback('/%(.*?)%/s', function ($match) {
+            if (getenv($match[1])) {
+                return getenv($match[1]);
+            } elseif (defined($match[1])) {
+                return constant($match[1]);
+            }
+
+            return $match[0];
+        }, $value);
     }
 }

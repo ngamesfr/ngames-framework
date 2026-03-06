@@ -72,8 +72,7 @@ class Exception extends \Exception
                 break;
             }
 
-            $file = array_key_exists('file', $trace[0]) ? $trace[0]['file'] : 'Unknown Source';
-            $line = array_key_exists('file', $trace[0]) && array_key_exists('line', $trace[0]) && $trace[0]['line'] ? $trace[0]['line'] : null;
+            [$file, $line] = self::getFrameFileAndLine($trace[0]);
             array_shift($trace);
         }
 
@@ -84,6 +83,14 @@ class Exception extends \Exception
         }
 
         return $result;
+    }
+
+    private static function getFrameFileAndLine(array $frame): array
+    {
+        $file = array_key_exists('file', $frame) ? $frame['file'] : 'Unknown Source';
+        $line = array_key_exists('file', $frame) && array_key_exists('line', $frame) && $frame['line'] ? $frame['line'] : null;
+
+        return [$file, $line];
     }
 
     private static function formatFunction(array $frame): string

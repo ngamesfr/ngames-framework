@@ -13,7 +13,6 @@
             "Ngames\\Framework\\" : "lib/Ngames/Framework/"
         }
     },
-    "version": "0.6.0",
     "require": {
         "php": ">= 8.5"
     },

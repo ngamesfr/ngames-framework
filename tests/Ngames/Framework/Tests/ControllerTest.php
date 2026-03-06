@@ -68,7 +68,7 @@ class ControllerTest extends \PHPUnit\Framework\TestCase
         ob_start();
         $response->send();
         $this->assertEmpty(ob_get_contents());
-        $this->assertEquals(301, http_response_code());
+        $this->assertEquals(302, http_response_code());
         $this->assertEquals('url', $response->getHeaders()['Location']);
         ob_end_clean();
     }

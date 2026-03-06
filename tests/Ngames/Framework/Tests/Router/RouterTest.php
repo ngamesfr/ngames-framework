@@ -58,7 +58,17 @@ class RouterTest extends \PHPUnit\Framework\TestCase
     {
         $router = new Router();
         $router->addMatcher(@Matcher::forConventionRoute('/test', 'test1-module', 'test1-controller', 'test1-action'));
+
+        $warning = null;
+        set_error_handler(function (int $errno, string $errstr) use (&$warning) {
+            $warning = $errstr;
+            return true;
+        }, E_USER_WARNING);
+
         $router->addMatcher(@Matcher::forConventionRoute('/test', 'test2-module', 'test2-controller', 'test2-action'));
+        restore_error_handler();
+
+        $this->assertStringContainsString('Duplicate route registered: ANY /test', $warning);
         $route = $router->getRoute('/test');
         $this->assertEquals('test1-module', $route->getModuleName());
         $this->assertEquals('test1-controller', $route->getControllerName());

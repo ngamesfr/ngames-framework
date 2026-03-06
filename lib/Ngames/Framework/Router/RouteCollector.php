@@ -9,6 +9,7 @@ use Ngames\Framework\Router\Attribute\Patch;
 use Ngames\Framework\Router\Attribute\Post;
 use Ngames\Framework\Router\Attribute\Put;
 use Ngames\Framework\Router\Attribute\Route as RouteAttribute;
+use Ngames\Framework\Router\MiddlewareInterface;
 
 class RouteCollector
 {
@@ -145,16 +146,21 @@ class RouteCollector
      */
     private function getClassNameFromFile(string $filePath): ?string
     {
-        $contents = file_get_contents($filePath);
+        $tokens = token_get_all(file_get_contents($filePath));
         $namespace = null;
         $class = null;
 
-        if (preg_match('/namespace\s+([^;]+);/', $contents, $matches)) {
-            $namespace = $matches[1];
-        }
+        for ($i = 0, $count = count($tokens); $i < $count; $i++) {
+            if (!is_array($tokens[$i])) {
+                continue;
+            }
 
-        if (preg_match('/class\s+(\w+)/', $contents, $matches)) {
-            $class = $matches[1];
+            if ($tokens[$i][0] === T_NAMESPACE) {
+                $namespace = $this->extractTokenValue($tokens, $i, [T_NAME_QUALIFIED, T_STRING]);
+            } elseif ($tokens[$i][0] === T_CLASS && !$this->isPrecededBy($tokens, $i, T_DOUBLE_COLON)) {
+                $class = $this->extractTokenValue($tokens, $i, [T_STRING]);
+                break;
+            }
         }
 
         if ($class === null) {
@@ -162,6 +168,38 @@ class RouteCollector
         }
 
         return $namespace !== null ? $namespace . '\\' . $class : $class;
+    }
+
+    private function extractTokenValue(array $tokens, int $index, array $expectedTokens): ?string
+    {
+        $count = count($tokens);
+
+        for ($i = $index + 1; $i < $count; $i++) {
+            if (!is_array($tokens[$i])) {
+                break;
+            }
+
+            if (in_array($tokens[$i][0], $expectedTokens)) {
+                return $tokens[$i][1];
+            }
+
+            if ($tokens[$i][0] !== T_WHITESPACE) {
+                break;
+            }
+        }
+
+        return null;
+    }
+
+    private function isPrecededBy(array $tokens, int $index, int $tokenType): bool
+    {
+        for ($i = $index - 1; $i >= 0; $i--) {
+            if (!is_array($tokens[$i]) || $tokens[$i][0] !== T_WHITESPACE) {
+                return is_array($tokens[$i]) && $tokens[$i][0] === $tokenType;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -185,12 +223,28 @@ class RouteCollector
         // Collect class-level middleware
         $classMiddlewares = [];
         foreach ($reflectionClass->getAttributes(Middleware::class) as $attr) {
-            $classMiddlewares[] = $attr->newInstance()->class;
+            $classes = $attr->newInstance()->classes;
+            $this->validateMiddlewareClasses($classes, $className);
+            array_push($classMiddlewares, ...$classes);
         }
 
         // Process methods
         foreach ($reflectionClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
             $this->processMethod($method, $basePath, $className, $classMiddlewares, $routes);
+        }
+    }
+
+    private function validateMiddlewareClasses(array $classes, string $context): void
+    {
+        foreach ($classes as $class) {
+            if (!is_subclass_of($class, MiddlewareInterface::class)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Middleware "%s" declared on %s must implement %s',
+                    $class,
+                    $context,
+                    MiddlewareInterface::class
+                ));
+            }
         }
     }
 
@@ -201,7 +255,9 @@ class RouteCollector
     {
         $methodMiddlewares = [];
         foreach ($method->getAttributes(Middleware::class) as $mwAttr) {
-            $methodMiddlewares[] = $mwAttr->newInstance()->class;
+            $classes = $mwAttr->newInstance()->classes;
+            $this->validateMiddlewareClasses($classes, $className . '::' . $method->getName());
+            array_push($methodMiddlewares, ...$classes);
         }
         $allMiddlewares = array_merge($classMiddlewares, $methodMiddlewares);
 

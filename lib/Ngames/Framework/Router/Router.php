@@ -43,6 +43,11 @@ class Router
     private $namedMatchers = [];
 
     /**
+     * @var array<string, bool>
+     */
+    private $registeredPatterns = [];
+
+    /**
      * Adds a new matcher at the begining of the matcher list.
      *
      * @param Matcher $matcher
@@ -51,6 +56,13 @@ class Router
      */
     public function addMatcher(Matcher $matcher)
     {
+        $key = ($matcher->getMethod() ?? 'ANY') . ' ' . $matcher->getPattern();
+
+        if (isset($this->registeredPatterns[$key])) {
+            trigger_error(sprintf('Duplicate route registered: %s', $key), E_USER_WARNING);
+        }
+
+        $this->registeredPatterns[$key] = true;
         $this->matchers[] = $matcher;
 
         if ($matcher->getName() !== null) {

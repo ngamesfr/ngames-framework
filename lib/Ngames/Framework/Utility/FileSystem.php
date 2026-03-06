@@ -54,14 +54,14 @@ class FileSystem
      *
      * @param Resource $fileResource
      * @param string $string
-     * @return int
+     * @return int|false
      */
     public static function fwriteStream($fileResource, $string)
     {
         for ($written = 0; $written < strlen($string); $written += $fwrite) {
             $fwrite = fwrite($fileResource, substr($string, $written));
             if ($fwrite === false) {
-                return $fwrite;
+                return false;
             }
         }
 

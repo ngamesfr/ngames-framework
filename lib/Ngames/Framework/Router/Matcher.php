@@ -93,7 +93,7 @@ class Matcher
         ?string $name = null,
         ?string $method = null
     ): self {
-        @trigger_error(
+        trigger_error(
             'Convention-based routing (module/controller/action) is deprecated. Use attribute-based routing instead.',
             E_USER_DEPRECATED
         );

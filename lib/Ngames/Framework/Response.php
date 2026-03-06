@@ -183,12 +183,7 @@ class Response
      */
     public static function createInternalErrorResponse($message = null)
     {
-        $response = new self();
-        $response->setHeader(self::CONTENT_TYPE_HEADER, self::ERROR_CONTENT_TYPE);
-        $response->setContent($message !== null ? $message : 'Internal server error.');
-        $response->setStatusCode(self::HTTP_STATUS_INTERNAL_SERVER_ERROR);
-
-        return $response;
+        return self::createErrorResponse(self::HTTP_STATUS_INTERNAL_SERVER_ERROR, 'Internal server error.', $message);
     }
 
     /**
@@ -199,12 +194,7 @@ class Response
      */
     public static function createUnauthorizedResponse($message = null)
     {
-        $response = new self();
-        $response->setHeader(self::CONTENT_TYPE_HEADER, self::ERROR_CONTENT_TYPE);
-        $response->setContent($message !== null ? $message : 'Unauthorized.');
-        $response->setStatusCode(self::HTTP_STATUS_UNAUTHORIZED);
-
-        return $response;
+        return self::createErrorResponse(self::HTTP_STATUS_UNAUTHORIZED, 'Unauthorized.', $message);
     }
 
     /**
@@ -215,12 +205,7 @@ class Response
      */
     public static function createNotFoundResponse($message = null)
     {
-        $response = new self();
-        $response->setHeader(self::CONTENT_TYPE_HEADER, self::ERROR_CONTENT_TYPE);
-        $response->setContent($message !== null ? $message : 'File not found.');
-        $response->setStatusCode(self::HTTP_STATUS_NOT_FOUND);
-
-        return $response;
+        return self::createErrorResponse(self::HTTP_STATUS_NOT_FOUND, 'File not found.', $message);
     }
 
     /**
@@ -231,10 +216,23 @@ class Response
      */
     public static function createBadRequestResponse($message = null)
     {
+        return self::createErrorResponse(self::HTTP_STATUS_BAD_REQUEST, 'Bad request.', $message);
+    }
+
+    /**
+     * Create an error response with the given status code and message.
+     *
+     * @param int $statusCode
+     * @param string $defaultMessage
+     * @param string|null $message
+     * @return Response
+     */
+    private static function createErrorResponse($statusCode, $defaultMessage, $message = null)
+    {
         $response = new self();
         $response->setHeader(self::CONTENT_TYPE_HEADER, self::ERROR_CONTENT_TYPE);
-        $response->setContent($message !== null ? $message : 'Bad request.');
-        $response->setStatusCode(self::HTTP_STATUS_BAD_REQUEST);
+        $response->setContent($message !== null ? $message : $defaultMessage);
+        $response->setStatusCode($statusCode);
 
         return $response;
     }

@@ -65,7 +65,14 @@ class IniFile extends PhpArrayRecursive implements StorageInterface
         $content = '';
 
         foreach ($configuration as $key => $value) {
-            $content .= $key . '=' . $value . "\n";
+            if (is_array($value)) {
+                $content .= '[' . $key . "]\n";
+                foreach ($value as $subKey => $subValue) {
+                    $content .= $subKey . '=' . (is_array($subValue) ? '' : $subValue) . "\n";
+                }
+            } else {
+                $content .= $key . '=' . $value . "\n";
+            }
         }
 
         file_put_contents($fileName, $content);

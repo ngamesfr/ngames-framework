@@ -59,6 +59,8 @@ abstract class AbstractStorage implements StorageInterface, \ArrayAccess
         if ($this->has($name)) {
             return $this->get($name);
         }
+
+        return null;
     }
 
     /**

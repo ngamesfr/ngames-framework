@@ -89,7 +89,7 @@ class Inflector
     public static function ellipsis($string, $maxLength)
     {
         if (mb_strlen($string) > $maxLength) {
-            $string = substr($string, 0, $maxLength) . ' ...';
+            $string = mb_substr($string, 0, $maxLength) . ' ...';
         }
 
         return $string;

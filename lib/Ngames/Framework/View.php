@@ -265,13 +265,15 @@ class View // NOSONAR - view class with helpers, splitting would be overengineer
     {
         if ($value !== null) {
             $this->variables[self::VARIABLE_PLACEHOLDERS][$name] = $value;
-        } else {
-            if (array_key_exists($name, $this->variables[self::VARIABLE_PLACEHOLDERS])) {
-                return $this->variables[self::VARIABLE_PLACEHOLDERS][$name];
-            } else {
-                return '';
-            }
+
+            return '';
         }
+
+        if (array_key_exists($name, $this->variables[self::VARIABLE_PLACEHOLDERS])) {
+            return $this->variables[self::VARIABLE_PLACEHOLDERS][$name];
+        }
+
+        return '';
     }
 
     /**
@@ -316,11 +318,7 @@ class View // NOSONAR - view class with helpers, splitting would be overengineer
      */
     public function prependStylesheet($path)
     {
-        if (in_array($path, $this->variables[self::VARIABLE_STYLESHEETS])) {
-            unset($this->variables[self::VARIABLE_STYLESHEETS][array_search($path, $this->variables[self::VARIABLE_STYLESHEETS])]);
-        }
-
-        array_unshift($this->variables[self::VARIABLE_STYLESHEETS], $path);
+        $this->addToList(self::VARIABLE_STYLESHEETS, $path, true);
     }
 
     /**
@@ -330,11 +328,7 @@ class View // NOSONAR - view class with helpers, splitting would be overengineer
      */
     public function appendStylesheet($path)
     {
-        if (in_array($path, $this->variables[self::VARIABLE_STYLESHEETS])) {
-            unset($this->variables[self::VARIABLE_STYLESHEETS][array_search($path, $this->variables[self::VARIABLE_STYLESHEETS])]);
-        }
-
-        array_push($this->variables[self::VARIABLE_STYLESHEETS], $path);
+        $this->addToList(self::VARIABLE_STYLESHEETS, $path, false);
     }
 
     /**
@@ -345,7 +339,7 @@ class View // NOSONAR - view class with helpers, splitting would be overengineer
         $result = '';
 
         foreach ($this->variables[self::VARIABLE_STYLESHEETS] as $stylesheet) {
-            $result .= '<link rel="stylesheet" href="' . $stylesheet . '" />';
+            $result .= '<link rel="stylesheet" href="' . htmlspecialchars($stylesheet, ENT_QUOTES, 'UTF-8') . '" />';
         }
 
         return $result;
@@ -358,11 +352,7 @@ class View // NOSONAR - view class with helpers, splitting would be overengineer
      */
     public function prependScript($path)
     {
-        if (in_array($path, $this->variables[self::VARIABLE_SCRIPTS])) {
-            unset($this->variables[self::VARIABLE_SCRIPTS][array_search($path, $this->variables[self::VARIABLE_SCRIPTS])]);
-        }
-
-        array_unshift($this->variables[self::VARIABLE_SCRIPTS], $path);
+        $this->addToList(self::VARIABLE_SCRIPTS, $path, true);
     }
 
     /**
@@ -372,11 +362,7 @@ class View // NOSONAR - view class with helpers, splitting would be overengineer
      */
     public function appendScript($path)
     {
-        if (in_array($path, $this->variables[self::VARIABLE_SCRIPTS])) {
-            unset($this->variables[self::VARIABLE_SCRIPTS][array_search($path, $this->variables[self::VARIABLE_SCRIPTS])]);
-        }
-
-        array_push($this->variables[self::VARIABLE_SCRIPTS], $path);
+        $this->addToList(self::VARIABLE_SCRIPTS, $path, false);
     }
 
     /**
@@ -387,7 +373,7 @@ class View // NOSONAR - view class with helpers, splitting would be overengineer
         $result = '';
 
         foreach ($this->variables[self::VARIABLE_SCRIPTS] as $script) {
-            $result .= '<script src="' . $script . '"></script>';
+            $result .= '<script src="' . htmlspecialchars($script, ENT_QUOTES, 'UTF-8') . '"></script>';
         }
 
         return $result;
@@ -490,5 +476,25 @@ class View // NOSONAR - view class with helpers, splitting would be overengineer
         }
 
         return $renderContent;
+    }
+
+    /**
+     * Add a path to a list variable, removing duplicates.
+     *
+     * @param string $variableName
+     * @param string $path
+     * @param bool $prepend
+     */
+    private function addToList($variableName, $path, $prepend)
+    {
+        if (in_array($path, $this->variables[$variableName])) {
+            unset($this->variables[$variableName][array_search($path, $this->variables[$variableName])]);
+        }
+
+        if ($prepend) {
+            array_unshift($this->variables[$variableName], $path);
+        } else {
+            array_push($this->variables[$variableName], $path);
+        }
     }
 }

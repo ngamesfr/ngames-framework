@@ -212,7 +212,7 @@ class Controller
 
         $controllerInstance = self::createController($controllerClassName, $route, $request);
 
-        $innerAction = function (Request $request) use ($controllerInstance, $actionMethodName, $args) {
+        $innerAction = function (Request $_request) use ($controllerInstance, $actionMethodName, $args) {
             $result = $controllerInstance->preExecute();
             if ($result === null) {
                 $result = $controllerInstance->$actionMethodName(...$args);

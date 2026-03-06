@@ -98,18 +98,29 @@ class Matcher
             E_USER_DEPRECATED
         );
 
-        $matcher = new self($pattern, $method ?? 'ANY', '', '');
-        $matcher->moduleName = $moduleName;
-        $matcher->controllerName = $controllerName;
-        $matcher->actionName = $actionName;
-        $matcher->name = $name;
-        $matcher->method = $method !== null ? strtoupper($method) : null;
-        $matcher->controllerClass = null;
-        $matcher->actionMethod = null;
-        $matcher->middlewares = [];
-        $matcher->checkConventionRoute();
+        $matcher = new self($pattern, $method ?? 'ANY', '', '', [], $name);
+        $matcher->initLegacy($moduleName, $controllerName, $actionName, $method);
 
         return $matcher;
+    }
+
+    /**
+     * Initialize legacy convention-based fields and validate.
+     */
+    private function initLegacy(
+        ?string $moduleName,
+        ?string $controllerName,
+        ?string $actionName,
+        ?string $method
+    ): void {
+        $this->moduleName = $moduleName;
+        $this->controllerName = $controllerName;
+        $this->actionName = $actionName;
+        $this->method = $method !== null ? strtoupper($method) : null;
+        $this->controllerClass = null;
+        $this->actionMethod = null;
+        $this->middlewares = [];
+        $this->checkConventionRoute();
     }
 
     /**

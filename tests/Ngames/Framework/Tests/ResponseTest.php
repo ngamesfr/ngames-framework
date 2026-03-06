@@ -118,6 +118,15 @@ class ResponseTest extends \PHPUnit\Framework\TestCase
     {
         $response = Response::createRedirectResponse('newUrl');
         $output = $this->sendResponseAndReturnOutput($response);
+        $this->assertEquals(302, http_response_code());
+        $this->assertEquals('newUrl', $response->getHeaders()['Location']);
+        $this->assertEmpty($output);
+    }
+
+    public function testCreateRedirectResponseWithCustomStatusCode()
+    {
+        $response = Response::createRedirectResponse('newUrl', 301);
+        $output = $this->sendResponseAndReturnOutput($response);
         $this->assertEquals(301, http_response_code());
         $this->assertEquals('newUrl', $response->getHeaders()['Location']);
         $this->assertEmpty($output);

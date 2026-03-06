@@ -243,12 +243,13 @@ class Response
      * Create a redirect response
      *
      * @param string $url
+     * @param int $statusCode
      * @return Response
      */
-    public static function createRedirectResponse($url)
+    public static function createRedirectResponse($url, $statusCode = self::HTTP_STATUS_FOUND)
     {
         $response = new self();
-        $response->setStatusCode(self::HTTP_STATUS_MOVED_PERMANENTLY);
+        $response->setStatusCode($statusCode);
         $response->setHeader('Location', $url);
 
         return $response;

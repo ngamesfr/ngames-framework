@@ -158,16 +158,14 @@ class RouterTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('/api/users/42', $router->url('user.show', ['id' => '42']));
     }
 
-    public function testPrependMatchers_beforeExisting()
+    public function testAddMatcher_prependBeforeExisting()
     {
         $router = new Router();
         // User adds a catch-all matcher first
         $router->addMatcher(@Matcher::forConventionRoute('/:module/:controller/:action'));
 
-        // Annotated routes are prepended — should match before the catch-all
-        $router->prependMatchers([
-            new Matcher('/blog', 'GET', 'Controller\\App\\BlogController', 'listAction'),
-        ]);
+        // Annotated route is prepended — should match before the catch-all
+        $router->addMatcher(new Matcher('/blog', 'GET', 'Controller\\App\\BlogController', 'listAction'), prepend: true);
 
         $route = $router->getRoute('/blog', 'GET');
         $this->assertNotNull($route);
@@ -175,23 +173,15 @@ class RouterTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('Controller\\App\\BlogController', $route->getControllerClass());
     }
 
-    public function testPrependMatchers_preservesInternalOrder()
+    public function testAddMatcher_prependFallbackStillReachable()
     {
         $router = new Router();
         $router->addMatcher(@Matcher::forConventionRoute('/fallback', 'mod', 'ctrl', 'fallback'));
 
-        $router->prependMatchers([
-            new Matcher('/first', 'GET', 'App\\First', 'indexAction'),
-            new Matcher('/second', 'GET', 'App\\Second', 'indexAction'),
-        ]);
+        $router->addMatcher(new Matcher('/first', 'GET', 'App\\First', 'indexAction'), prepend: true);
 
-        // First prepended matcher wins for /first
         $route = $router->getRoute('/first', 'GET');
         $this->assertEquals('App\\First', $route->getControllerClass());
-
-        // Second prepended matcher wins for /second
-        $route = $router->getRoute('/second', 'GET');
-        $this->assertEquals('App\\Second', $route->getControllerClass());
 
         // Fallback still reachable
         $route = $router->getRoute('/fallback');

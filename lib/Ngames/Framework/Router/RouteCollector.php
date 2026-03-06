@@ -40,18 +40,15 @@ class RouteCollector
     {
         $routes = $this->loadRoutes($directories);
 
-        $matchers = [];
         foreach ($routes as $routeData) {
-            $matchers[] = new Matcher(
+            $router->addMatcher(new Matcher(
                 $routeData['pattern'],
                 $routeData['method'],
                 $routeData['controllerClass'],
                 $routeData['actionMethod'],
                 $routeData['middlewares']
-            );
+            ), prepend: true);
         }
-
-        $router->prependMatchers($matchers);
     }
 
     /**

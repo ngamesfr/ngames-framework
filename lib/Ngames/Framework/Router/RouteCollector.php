@@ -145,16 +145,21 @@ class RouteCollector
      */
     private function getClassNameFromFile(string $filePath): ?string
     {
-        $contents = file_get_contents($filePath);
+        $tokens = token_get_all(file_get_contents($filePath));
         $namespace = null;
         $class = null;
 
-        if (preg_match('/namespace\s+([^;]+);/', $contents, $matches)) {
-            $namespace = $matches[1];
-        }
+        for ($i = 0, $count = count($tokens); $i < $count; $i++) {
+            if (!is_array($tokens[$i])) {
+                continue;
+            }
 
-        if (preg_match('/class\s+(\w+)/', $contents, $matches)) {
-            $class = $matches[1];
+            if ($tokens[$i][0] === T_NAMESPACE) {
+                $namespace = $this->extractTokenValue($tokens, $i, [T_NAME_QUALIFIED, T_STRING]);
+            } elseif ($tokens[$i][0] === T_CLASS && !$this->isPrecededBy($tokens, $i, T_DOUBLE_COLON)) {
+                $class = $this->extractTokenValue($tokens, $i, [T_STRING]);
+                break;
+            }
         }
 
         if ($class === null) {
@@ -162,6 +167,46 @@ class RouteCollector
         }
 
         return $namespace !== null ? $namespace . '\\' . $class : $class;
+    }
+
+    private function extractTokenValue(array $tokens, int $index, array $expectedTokens): ?string
+    {
+        $count = count($tokens);
+
+        for ($i = $index + 1; $i < $count; $i++) {
+            if (!is_array($tokens[$i])) {
+                break;
+            }
+
+            if (in_array($tokens[$i][0], $expectedTokens)) {
+                return $tokens[$i][1];
+            }
+
+            if ($tokens[$i][0] !== T_WHITESPACE) {
+                break;
+            }
+        }
+
+        return null;
+    }
+
+    private function isPrecededBy(array $tokens, int $index, int $tokenType): bool
+    {
+        for ($i = $index - 1; $i >= 0; $i--) {
+            if (!is_array($tokens[$i])) {
+                return false;
+            }
+
+            if ($tokens[$i][0] === $tokenType) {
+                return true;
+            }
+
+            if ($tokens[$i][0] !== T_WHITESPACE) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     /**

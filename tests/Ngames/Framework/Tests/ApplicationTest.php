@@ -106,7 +106,7 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
     {
         require_once __DIR__ . '/DummyController.php';
         $application = Application::initialize(ROOT_DIR . '/tests/data/Application/config.ini');
-        $application->getRouter()->addMatcher(new Matcher('/', 'application', 'dummy', 'index'));
+        $application->getRouter()->addMatcher(@Matcher::forConventionRoute('/', 'application', 'dummy', 'index'));
         ob_start();
         $application->run();
         $this->assertEquals('index', ob_get_contents());
@@ -118,7 +118,7 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
     {
         require_once __DIR__ . '/DummyController.php';
         $application = Application::initialize(ROOT_DIR . '/tests/data/Application/config.ini');
-        $application->getRouter()->addMatcher(new Matcher('/test', 'application', 'dummy', 'index'));
+        $application->getRouter()->addMatcher(@Matcher::forConventionRoute('/test', 'application', 'dummy', 'index'));
         ob_start();
         $application->run();
         $this->assertEquals('File not found.', ob_get_contents());
@@ -130,7 +130,7 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
     {
         require_once __DIR__ . '/DummyController.php';
         $application = Application::initialize(ROOT_DIR . '/tests/data/Application/config.ini');
-        $application->getRouter()->addMatcher(new Matcher('/', 'application', 'dummy', 'output-string'));
+        $application->getRouter()->addMatcher(@Matcher::forConventionRoute('/', 'application', 'dummy', 'output-string'));
         ob_start();
         $application->run();
         $this->assertEquals('output_string', ob_get_contents());
@@ -142,7 +142,7 @@ class ApplicationTest extends \PHPUnit\Framework\TestCase
     {
         require_once __DIR__ . '/DummyController.php';
         $application = Application::initialize(ROOT_DIR . '/tests/data/Application/config.ini');
-        $application->getRouter()->addMatcher(new Matcher('/', 'application', 'dummy', 'output-null'));
+        $application->getRouter()->addMatcher(@Matcher::forConventionRoute('/', 'application', 'dummy', 'output-null'));
         ob_start();
         $application->run();
         $this->assertEquals('Internal server error.', ob_get_contents());

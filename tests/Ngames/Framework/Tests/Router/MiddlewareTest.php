@@ -32,13 +32,10 @@ class MiddlewareTest extends TestCase
 
     public function testClassLevelMiddlewareRunsForAllMethods()
     {
-        $route = new Route(
-            null,
-            null,
-            null,
-            [],
+        $route = Route::create(
             TestAnnotatedController::class,
             'listAction',
+            [],
             [TestClassMiddleware::class]
         );
         $request = new Request();
@@ -48,13 +45,10 @@ class MiddlewareTest extends TestCase
 
     public function testMethodLevelMiddlewareStacksOnTopOfClassLevel()
     {
-        $route = new Route(
-            null,
-            null,
-            null,
-            ['id' => '42'],
+        $route = Route::create(
             TestAnnotatedController::class,
             'deleteAction',
+            ['id' => '42'],
             [TestClassMiddleware::class, TestMethodMiddleware::class]
         );
         $request = new Request();
@@ -65,13 +59,10 @@ class MiddlewareTest extends TestCase
 
     public function testMiddlewareCanShortCircuit()
     {
-        $route = new Route(
-            null,
-            null,
-            null,
-            [],
+        $route = Route::create(
             TestAnnotatedController::class,
             'listAction',
+            [],
             [TestShortCircuitMiddleware::class]
         );
         $request = new Request();
@@ -89,20 +80,15 @@ class MiddlewareTest extends TestCase
 
     public function testMiddlewareExecutionOrder()
     {
-        // Class middleware runs first (outermost), then method middleware
-        $route = new Route(
-            null,
-            null,
-            null,
-            ['id' => '1'],
+        $route = Route::create(
             TestAnnotatedController::class,
             'deleteAction',
+            ['id' => '1'],
             [TestClassMiddleware::class, TestMethodMiddleware::class]
         );
         $request = new Request();
         $result = Controller::execute($route, $request);
 
-        // Both middlewares should have run and added their headers
         $headers = $result->getHeaders();
         $this->assertArrayHasKey('X-Class-Middleware', $headers);
         $this->assertArrayHasKey('X-Method-Middleware', $headers);
@@ -110,12 +96,10 @@ class MiddlewareTest extends TestCase
 
     public function testNonAnnotatedRoutesSkipMiddleware()
     {
-        // Use the existing convention route - no middleware metadata
-        $route = new Route('application', 'dummy', 'index');
+        $route = Route::createLegacy('application', 'dummy', 'index');
         $request = new Request();
         $result = Controller::execute($route, $request);
 
-        // Should work as before, no middleware headers
         ob_start();
         $result->send();
         $content = ob_get_contents();

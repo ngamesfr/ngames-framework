@@ -89,7 +89,7 @@ class IntegrationTest extends TestCase
         $collector->collect([__DIR__ . '/Fixtures'], $router);
 
         // Add a convention matcher after annotated routes
-        $router->addMatcher(new \Ngames\Framework\Router\Matcher('/:module/:controller/:action'));
+        $router->addMatcher(@\Ngames\Framework\Router\Matcher::forConventionRoute('/:module/:controller/:action'));
 
         // Annotated route should match
         $route = $router->getRoute('/api/v1/alliances', 'GET');

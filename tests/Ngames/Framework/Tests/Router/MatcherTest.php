@@ -28,66 +28,121 @@ use Ngames\Framework\Router\Matcher;
 
 class MatcherTest extends \PHPUnit\Framework\TestCase
 {
-    // Initialization error cases
-    public function testInvalidInitialization_missingModuleKeyAndValue()
+    // Annotated route tests (primary API)
+    public function testAnnotatedRoute_matchesPattern()
+    {
+        $matcher = new Matcher('/api/users/:id', 'GET', 'App\\UserController', 'show');
+        $result = $matcher->match('/api/users/42', 'GET');
+        $this->assertNotNull($result);
+        $this->assertTrue($result->isAnnotated());
+        $this->assertEquals('App\\UserController', $result->getControllerClass());
+        $this->assertEquals('show', $result->getActionMethod());
+        $this->assertEquals(['id' => '42'], $result->getParameters());
+    }
+
+    public function testAnnotatedRoute_noMatch()
+    {
+        $matcher = new Matcher('/api/users/:id', 'GET', 'App\\UserController', 'show');
+        $this->assertNull($matcher->match('/api/posts/42', 'GET'));
+    }
+
+    public function testAnnotatedRoute_methodConstraint()
+    {
+        $matcher = new Matcher('/api/users', 'POST', 'App\\UserController', 'create');
+        $this->assertNull($matcher->match('/api/users', 'GET'));
+        $this->assertNotNull($matcher->match('/api/users', 'POST'));
+    }
+
+    public function testAnnotatedRoute_methodIsCaseInsensitive()
+    {
+        $matcher = new Matcher('/test', 'get', 'App\\Ctrl', 'act');
+        $this->assertNotNull($matcher->match('/test', 'GET'));
+        $this->assertNotNull($matcher->match('/test', 'get'));
+    }
+
+    public function testAnnotatedRoute_middlewaresPassedToRoute()
+    {
+        $matcher = new Matcher('/test', 'GET', 'App\\Ctrl', 'act', ['App\\AuthMiddleware']);
+        $result = $matcher->match('/test', 'GET');
+        $this->assertEquals(['App\\AuthMiddleware'], $result->getMiddlewares());
+    }
+
+    public function testAnnotatedRoute_getName()
+    {
+        $matcher = new Matcher('/blog', 'GET', 'App\\BlogCtrl', 'index', [], 'blog');
+        $this->assertEquals('blog', $matcher->getName());
+    }
+
+    public function testAnnotatedRoute_getPattern()
+    {
+        $matcher = new Matcher('/blog', 'GET', 'App\\BlogCtrl', 'index');
+        $this->assertEquals('/blog', $matcher->getPattern());
+    }
+
+    public function testAnnotatedRoute_getMethod()
+    {
+        $matcher = new Matcher('/test', 'POST', 'App\\Ctrl', 'act');
+        $this->assertEquals('POST', $matcher->getMethod());
+    }
+
+    // Legacy convention-based route tests
+    public function testLegacy_invalidInitialization_missingModuleKeyAndValue()
     {
         $this->expectException('\Ngames\Framework\Router\InvalidMatcherException');
         $this->expectExceptionMessage('Missing module key or module value, or provided both');
-        new Matcher('/:controller/:action');
+        @Matcher::forConventionRoute('/:controller/:action');
     }
 
-    public function testInvalidInitialization_moduleKeyAndValue()
+    public function testLegacy_invalidInitialization_moduleKeyAndValue()
     {
         $this->expectException('\Ngames\Framework\Router\InvalidMatcherException');
         $this->expectExceptionMessage('Missing module key or module value, or provided both');
-        new Matcher('/:module', 'module');
+        @Matcher::forConventionRoute('/:module', 'module');
     }
 
-    public function testInvalidInitialization_missingControllerKeyAndValue()
+    public function testLegacy_invalidInitialization_missingControllerKeyAndValue()
     {
         $this->expectException('\Ngames\Framework\Router\InvalidMatcherException');
         $this->expectExceptionMessage('Missing controller key or controller value, or provided both');
-        new Matcher('/:module/:action');
+        @Matcher::forConventionRoute('/:module/:action');
     }
 
-    public function testInvalidInitialization_controllerKeyAndValue()
+    public function testLegacy_invalidInitialization_controllerKeyAndValue()
     {
         $this->expectException('\Ngames\Framework\Router\InvalidMatcherException');
         $this->expectExceptionMessage('Missing controller key or controller value, or provided both');
-        new Matcher('/:controller', 'module', 'controller');
+        @Matcher::forConventionRoute('/:controller', 'module', 'controller');
     }
 
-    public function testInvalidInitialization_missingActionKeyAndValue()
+    public function testLegacy_invalidInitialization_missingActionKeyAndValue()
     {
         $this->expectException('\Ngames\Framework\Router\InvalidMatcherException');
         $this->expectExceptionMessage('Missing action key or action value, or provided both');
-        new Matcher('/:module/:controller');
+        @Matcher::forConventionRoute('/:module/:controller');
     }
 
-    public function testInvalidInitialization_actionKeyAndValue()
+    public function testLegacy_invalidInitialization_actionKeyAndValue()
     {
         $this->expectException('\Ngames\Framework\Router\InvalidMatcherException');
         $this->expectExceptionMessage('Missing action key or action value, or provided both');
-        new Matcher('/:action', 'module', 'controller', 'action');
+        @Matcher::forConventionRoute('/:action', 'module', 'controller', 'action');
     }
 
-    // No match cases
-    public function testNoMatch()
+    public function testLegacy_noMatch()
     {
-        $matcher1 = new Matcher('/test', 'module1', 'controller1', 'action1');
+        $matcher1 = @Matcher::forConventionRoute('/test', 'module1', 'controller1', 'action1');
         $this->assertNull($matcher1->match('/test1'));
 
-        $matcher2 = new Matcher('/test/test', 'module2', 'controller2', 'action2');
+        $matcher2 = @Matcher::forConventionRoute('/test/test', 'module2', 'controller2', 'action2');
         $this->assertNull($matcher1->match('/test/test1'));
 
-        $matcher2 = new Matcher('/:module/:controller/:action');
+        $matcher2 = @Matcher::forConventionRoute('/:module/:controller/:action');
         $this->assertNull($matcher1->match('/module/controller/action/a'));
     }
 
-    // Match cases
-    public function testMatch_onlyDefault()
+    public function testLegacy_match_onlyDefault()
     {
-        $matcher1 = new Matcher('/test', 'module1', 'controller1', 'action1');
+        $matcher1 = @Matcher::forConventionRoute('/test', 'module1', 'controller1', 'action1');
         $result1 = $matcher1->match('/test');
         $this->assertNotNull($result1);
         $this->assertEquals('module1', $result1->getModuleName());
@@ -95,9 +150,9 @@ class MatcherTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('action1', $result1->getActionName());
     }
 
-    public function testMatch_matchModule()
+    public function testLegacy_match_matchModule()
     {
-        $matcher = new Matcher('/:module', null, 'controller', 'action');
+        $matcher = @Matcher::forConventionRoute('/:module', null, 'controller', 'action');
         $result = $matcher->match('/module-match');
         $this->assertNotNull($result);
         $this->assertEquals('module-match', $result->getModuleName());
@@ -105,9 +160,9 @@ class MatcherTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('action', $result->getActionName());
     }
 
-    public function testMatch_matchController()
+    public function testLegacy_match_matchController()
     {
-        $matcher = new Matcher('/:controller', 'module', null, 'action');
+        $matcher = @Matcher::forConventionRoute('/:controller', 'module', null, 'action');
         $result = $matcher->match('/controller-match');
         $this->assertNotNull($result);
         $this->assertEquals('module', $result->getModuleName());
@@ -115,9 +170,9 @@ class MatcherTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('action', $result->getActionName());
     }
 
-    public function testMatch_matchAction()
+    public function testLegacy_match_matchAction()
     {
-        $matcher = new Matcher('/:action', 'module', 'controller', null);
+        $matcher = @Matcher::forConventionRoute('/:action', 'module', 'controller', null);
         $result = $matcher->match('/action-match');
         $this->assertNotNull($result);
         $this->assertEquals('module', $result->getModuleName());
@@ -125,10 +180,9 @@ class MatcherTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('action-match', $result->getActionName());
     }
 
-    // Alias / custom parameter cases
-    public function testMatch_staticAlias()
+    public function testLegacy_match_staticAlias()
     {
-        $matcher = new Matcher('/blog', 'application', 'news', 'index');
+        $matcher = @Matcher::forConventionRoute('/blog', 'application', 'news', 'index');
         $result = $matcher->match('/blog');
         $this->assertNotNull($result);
         $this->assertEquals('application', $result->getModuleName());
@@ -137,9 +191,9 @@ class MatcherTest extends \PHPUnit\Framework\TestCase
         $this->assertEmpty($result->getParameters());
     }
 
-    public function testMatch_customParameter()
+    public function testLegacy_match_customParameter()
     {
-        $matcher = new Matcher('/article/:id', 'application', 'article', 'show');
+        $matcher = @Matcher::forConventionRoute('/article/:id', 'application', 'article', 'show');
         $result = $matcher->match('/article/42');
         $this->assertNotNull($result);
         $this->assertEquals('application', $result->getModuleName());
@@ -151,23 +205,23 @@ class MatcherTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('default', $result->getParameter('unknown', 'default'));
     }
 
-    public function testMatch_multipleCustomParameters()
+    public function testLegacy_match_multipleCustomParameters()
     {
-        $matcher = new Matcher('/article/:id/:slug', 'application', 'article', 'show');
+        $matcher = @Matcher::forConventionRoute('/article/:id/:slug', 'application', 'article', 'show');
         $result = $matcher->match('/article/42/my-title');
         $this->assertNotNull($result);
         $this->assertEquals(['id' => '42', 'slug' => 'my-title'], $result->getParameters());
     }
 
-    public function testMatch_customParameterNoMatch()
+    public function testLegacy_match_customParameterNoMatch()
     {
-        $matcher = new Matcher('/article/:id', 'application', 'article', 'show');
+        $matcher = @Matcher::forConventionRoute('/article/:id', 'application', 'article', 'show');
         $this->assertNull($matcher->match('/blog/42'));
     }
 
-    public function testMatch_defaultPatternStillWorks()
+    public function testLegacy_match_defaultPatternStillWorks()
     {
-        $matcher = new Matcher('/:module/:controller/:action');
+        $matcher = @Matcher::forConventionRoute('/:module/:controller/:action');
         $result = $matcher->match('/app/home/index');
         $this->assertNotNull($result);
         $this->assertEquals('app', $result->getModuleName());
@@ -176,58 +230,74 @@ class MatcherTest extends \PHPUnit\Framework\TestCase
         $this->assertEmpty($result->getParameters());
     }
 
-    public function testGetName()
+    public function testLegacy_getName()
     {
-        $matcher = new Matcher('/blog', 'app', 'news', 'index', 'blog');
+        $matcher = @Matcher::forConventionRoute('/blog', 'app', 'news', 'index', 'blog');
         $this->assertEquals('blog', $matcher->getName());
     }
 
-    public function testGetName_null()
+    public function testLegacy_getName_null()
     {
-        $matcher = new Matcher('/blog', 'app', 'news', 'index');
+        $matcher = @Matcher::forConventionRoute('/blog', 'app', 'news', 'index');
         $this->assertNull($matcher->getName());
     }
 
-    // HTTP method constraint tests
-    public function testMatchWithMethodGet_matchesGet()
+    public function testLegacy_matchWithMethodGet_matchesGet()
     {
-        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act', null, 'GET');
+        $matcher = @Matcher::forConventionRoute('/test', 'mod', 'ctrl', 'act', null, 'GET');
         $result = $matcher->match('/test', 'GET');
         $this->assertNotNull($result);
     }
 
-    public function testMatchWithMethodGet_rejectsPost()
+    public function testLegacy_matchWithMethodGet_rejectsPost()
     {
-        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act', null, 'GET');
+        $matcher = @Matcher::forConventionRoute('/test', 'mod', 'ctrl', 'act', null, 'GET');
         $result = $matcher->match('/test', 'POST');
         $this->assertNull($result);
     }
 
-    public function testMatchWithMethodNull_matchesAnyMethod()
+    public function testLegacy_matchWithMethodNull_matchesAnyMethod()
     {
-        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act');
+        $matcher = @Matcher::forConventionRoute('/test', 'mod', 'ctrl', 'act');
         $this->assertNotNull($matcher->match('/test', 'GET'));
         $this->assertNotNull($matcher->match('/test', 'POST'));
         $this->assertNotNull($matcher->match('/test', 'DELETE'));
         $this->assertNotNull($matcher->match('/test'));
     }
 
-    public function testMatchWithMethodIsCaseInsensitive()
+    public function testLegacy_matchWithMethodIsCaseInsensitive()
     {
-        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act', null, 'get');
+        $matcher = @Matcher::forConventionRoute('/test', 'mod', 'ctrl', 'act', null, 'get');
         $this->assertNotNull($matcher->match('/test', 'GET'));
         $this->assertNotNull($matcher->match('/test', 'get'));
     }
 
-    public function testGetMethod()
+    public function testLegacy_getMethod()
     {
-        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act', null, 'POST');
+        $matcher = @Matcher::forConventionRoute('/test', 'mod', 'ctrl', 'act', null, 'POST');
         $this->assertEquals('POST', $matcher->getMethod());
     }
 
-    public function testGetMethod_null()
+    public function testLegacy_getMethod_null()
     {
-        $matcher = new Matcher('/test', 'mod', 'ctrl', 'act');
+        $matcher = @Matcher::forConventionRoute('/test', 'mod', 'ctrl', 'act');
         $this->assertNull($matcher->getMethod());
+    }
+
+    // Deprecation notice test
+    public function testLegacy_triggersDeprecationNotice()
+    {
+        $deprecationTriggered = false;
+        set_error_handler(function ($errno) use (&$deprecationTriggered) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecationTriggered = true;
+            }
+            return true;
+        });
+
+        Matcher::forConventionRoute('/test', 'mod', 'ctrl', 'act');
+
+        restore_error_handler();
+        $this->assertTrue($deprecationTriggered);
     }
 }

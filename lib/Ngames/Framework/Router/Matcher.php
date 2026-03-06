@@ -25,8 +25,7 @@
 namespace Ngames\Framework\Router;
 
 /**
- * Matcher class used to identify matching route for a given requested URI
- *
+ * Matcher class used to identify matching route for a given requested URI.
  */
 class Matcher
 {
@@ -36,83 +35,87 @@ class Matcher
 
     public const ACTION_KEY = ':action';
 
-    private $pattern;
+    private string $pattern;
 
-    private $moduleName;
+    private ?string $name;
 
-    private $controllerName;
+    private ?string $method;
 
-    private $actionName;
+    private ?string $controllerClass;
 
-    private $name;
+    private ?string $actionMethod;
 
-    private $method;
+    private array $middlewares;
 
-    private $controllerClass;
+    // Legacy convention-based fields
+    private ?string $moduleName = null;
 
-    private $actionMethod;
+    private ?string $controllerName = null;
 
-    private $middlewares;
+    private ?string $actionName = null;
 
     /**
-     * Create a new matcher that will be used to test the route eligility.
+     * Create a matcher for an attribute-based route.
      *
-     * The pattern may define the URI part where module, controller or action are read. If not, the corresponding element must have a value defined.
-     *
-     * Samples pattern are:
-     * /home + module=default, controller=index, action=index
-     * /:controller/:action + module=default
-     * Etc.
-     *
-     * @param string $pattern
-     * @param string|null $moduleName
-     * @param string|null $controllerName
-     * @param string|null $actionName
-     * @param string|null $name
-     * @param string|null $method
+     * @param string $pattern The URI pattern (e.g. /api/users/:id)
+     * @param string $httpMethod The HTTP method (GET, POST, etc.)
+     * @param string $controllerClass Fully qualified controller class name
+     * @param string $actionMethod Method name on the controller
+     * @param array $middlewares Middleware class names
+     * @param string|null $name Optional route name for URL generation
      */
     public function __construct(
-        $pattern,
-        $moduleName = null,
-        $controllerName = null,
-        $actionName = null,
-        $name = null,
-        $method = null
-    ) {
-        $this->pattern = $pattern;
-        $this->moduleName = $moduleName;
-        $this->controllerName = $controllerName;
-        $this->actionName = $actionName;
-        $this->name = $name;
-        $this->method = $method !== null ? strtoupper($method) : null;
-        $this->middlewares = [];
-        $this->check();
-    }
-
-    /**
-     * Create a matcher for an annotated route (attribute-based routing).
-     */
-    public static function forAnnotatedRoute(
         string $pattern,
         string $httpMethod,
         string $controllerClass,
         string $actionMethod,
-        array $middlewares = []
+        array $middlewares = [],
+        ?string $name = null
+    ) {
+        $this->pattern = $pattern;
+        $this->method = strtoupper($httpMethod);
+        $this->controllerClass = $controllerClass;
+        $this->actionMethod = $actionMethod;
+        $this->middlewares = $middlewares;
+        $this->name = $name;
+    }
+
+    /**
+     * Create a matcher for convention-based routing (module/controller/action).
+     *
+     * @deprecated Use attribute-based routing instead. Convention-based routing will be removed in a future version.
+     */
+    public static function forConventionRoute(
+        string $pattern,
+        ?string $moduleName = null,
+        ?string $controllerName = null,
+        ?string $actionName = null,
+        ?string $name = null,
+        ?string $method = null
     ): self {
-        $matcher = new \ReflectionClass(self::class);
-        $instance = $matcher->newInstanceWithoutConstructor();
-        $instance->pattern = $pattern;
-        $instance->method = strtoupper($httpMethod);
-        $instance->controllerClass = $controllerClass;
-        $instance->actionMethod = $actionMethod;
-        $instance->middlewares = $middlewares;
-        return $instance;
+        @trigger_error(
+            'Convention-based routing (module/controller/action) is deprecated. Use attribute-based routing instead.',
+            E_USER_DEPRECATED
+        );
+
+        $matcher = new self($pattern, $method ?? 'ANY', '', '');
+        $matcher->moduleName = $moduleName;
+        $matcher->controllerName = $controllerName;
+        $matcher->actionName = $actionName;
+        $matcher->name = $name;
+        $matcher->method = $method !== null ? strtoupper($method) : null;
+        $matcher->controllerClass = null;
+        $matcher->actionMethod = null;
+        $matcher->middlewares = [];
+        $matcher->checkConventionRoute();
+
+        return $matcher;
     }
 
     /**
      * @return string|null
      */
-    public function getName()
+    public function getName(): ?string
     {
         return $this->name;
     }
@@ -120,7 +123,7 @@ class Matcher
     /**
      * @return string
      */
-    public function getPattern()
+    public function getPattern(): string
     {
         return $this->pattern;
     }
@@ -128,23 +131,20 @@ class Matcher
     /**
      * @return string|null
      */
-    public function getMethod()
+    public function getMethod(): ?string
     {
         return $this->method;
     }
 
     /**
      * Tries to match the input URI.
-     * Output is null if no match, a route otherwise.
      *
      * @param string $uri
      * @param string|null $method
-     *
      * @return Route|null
      */
-    public function match($uri, $method = null)
+    public function match($uri, $method = null): ?Route
     {
-        // Check HTTP method constraint
         if ($this->method !== null && $method !== null && strtoupper($method) !== $this->method) {
             return null;
         }
@@ -155,24 +155,28 @@ class Matcher
             return null;
         }
 
-        return new Route(
+        if ($this->controllerClass !== null) {
+            return Route::create(
+                $this->controllerClass,
+                $this->actionMethod,
+                $result['parameters'],
+                $this->middlewares
+            );
+        }
+
+        // Legacy convention-based route
+        return Route::createLegacy(
             $result['moduleName'],
             $result['controllerName'],
             $result['actionName'],
-            $result['parameters'],
-            $this->controllerClass,
-            $this->actionMethod,
-            $this->middlewares ?? []
+            $result['parameters']
         );
     }
 
     /**
      * Match the URI against the pattern and extract route components.
-     *
-     * @param string $uri
-     * @return array|null
      */
-    private function matchPattern($uri)
+    private function matchPattern($uri): ?array
     {
         $preparedPattern = $this->prepareForMatching($this->pattern);
         $preparedUri = $this->prepareForMatching($uri);
@@ -216,11 +220,11 @@ class Matcher
     }
 
     /**
-     * Checks that the configuration of the matcher is valid and throws an exception otherwise.
+     * Validate convention-based matcher configuration.
      *
      * @throws InvalidMatcherException
      */
-    private function check()
+    private function checkConventionRoute(): void
     {
         if (!($this->moduleName !== null xor strpos($this->pattern, self::MODULE_KEY) !== false)) {
             throw new InvalidMatcherException('Missing module key or module value, or provided both');
@@ -235,13 +239,11 @@ class Matcher
 
     /**
      * Return an array containing the URI/pattern parts.
-     *
-     * @param string $uri
      */
-    private function prepareForMatching($uri)
+    private function prepareForMatching($uri): array
     {
         return array_values(array_filter(explode('/', $uri ?? ''), function ($uriPart) {
-            return !empty($uriPart);
+            return $uriPart !== '';
         }));
     }
 }

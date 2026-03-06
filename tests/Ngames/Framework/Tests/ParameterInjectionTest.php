@@ -29,7 +29,7 @@ class ParameterInjectionTest extends TestCase
 
     public function testIntIdReceivesInteger()
     {
-        $route = new Route(null, null, null, ['id' => '42'], TestAnnotatedController::class, 'showAction', []);
+        $route = Route::create(TestAnnotatedController::class, 'showAction', ['id' => '42']);
         $request = new Request();
         $result = Controller::execute($route, $request);
         ob_start();
@@ -43,15 +43,7 @@ class ParameterInjectionTest extends TestCase
 
     public function testMultipleParameters()
     {
-        $route = new Route(
-            null,
-            null,
-            null,
-            ['id' => '42', 'userId' => '7'],
-            TestAnnotatedController::class,
-            'acceptAction',
-            []
-        );
+        $route = Route::create(TestAnnotatedController::class, 'acceptAction', ['id' => '42', 'userId' => '7']);
         $request = new Request();
         $result = Controller::execute($route, $request);
         ob_start();
@@ -66,7 +58,7 @@ class ParameterInjectionTest extends TestCase
 
     public function testNoParametersWorksAsBeforeForAnnotated()
     {
-        $route = new Route(null, null, null, [], TestAnnotatedController::class, 'listAction', []);
+        $route = Route::create(TestAnnotatedController::class, 'listAction');
         $request = new Request();
         $result = Controller::execute($route, $request);
         ob_start();
@@ -80,7 +72,7 @@ class ParameterInjectionTest extends TestCase
     public function testMissingRequiredParameterReturns400()
     {
         // showAction requires int $id but we provide no parameters
-        $route = new Route(null, null, null, [], TestAnnotatedController::class, 'showAction', []);
+        $route = Route::create(TestAnnotatedController::class, 'showAction');
         $request = new Request();
         $result = Controller::execute($route, $request);
         ob_start();
@@ -92,15 +84,7 @@ class ParameterInjectionTest extends TestCase
     public function testOptionalParameterUsesDefault()
     {
         // detailsAction(int $id, string $format = 'json')
-        $route = new Route(
-            null,
-            null,
-            null,
-            ['id' => '42'],
-            TestAnnotatedController::class,
-            'detailsAction',
-            []
-        );
+        $route = Route::create(TestAnnotatedController::class, 'detailsAction', ['id' => '42']);
         $request = new Request();
         $result = Controller::execute($route, $request);
         ob_start();
@@ -116,15 +100,7 @@ class ParameterInjectionTest extends TestCase
     public function testFloatCasting()
     {
         // scoreAction(float $id)
-        $route = new Route(
-            null,
-            null,
-            null,
-            ['id' => '3.14'],
-            TestAnnotatedController::class,
-            'scoreAction',
-            []
-        );
+        $route = Route::create(TestAnnotatedController::class, 'scoreAction', ['id' => '3.14']);
         $request = new Request();
         $result = Controller::execute($route, $request);
         ob_start();
@@ -139,15 +115,7 @@ class ParameterInjectionTest extends TestCase
     public function testBoolCasting()
     {
         // activeAction(bool $id)
-        $route = new Route(
-            null,
-            null,
-            null,
-            ['id' => 'true'],
-            TestAnnotatedController::class,
-            'activeAction',
-            []
-        );
+        $route = Route::create(TestAnnotatedController::class, 'activeAction', ['id' => 'true']);
         $request = new Request();
         $result = Controller::execute($route, $request);
         ob_start();

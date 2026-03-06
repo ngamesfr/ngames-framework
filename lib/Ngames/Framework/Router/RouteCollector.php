@@ -40,14 +40,13 @@ class RouteCollector
         $routes = $this->loadRoutes($directories);
 
         foreach ($routes as $routeData) {
-            $matcher = Matcher::forAnnotatedRoute(
+            $router->addMatcher(new Matcher(
                 $routeData['pattern'],
                 $routeData['method'],
                 $routeData['controllerClass'],
                 $routeData['actionMethod'],
                 $routeData['middlewares']
-            );
-            $router->addMatcher($matcher);
+            ));
         }
     }
 

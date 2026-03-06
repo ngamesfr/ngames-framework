@@ -183,24 +183,23 @@ class Application
             $route = $this->router->getRoute($request->getRequestUri(), $request->getMethod());
             $response = null;
 
-            if ($route == null) {
+            if ($route === null) {
                 $response = Response::createNotFoundResponse($this->isDebug() ? 'No route matched the requested URI' : null);
             } else {
                 $request->mergeGetParameters($route->getParameters());
-                $actionResult = Controller::execute($route, $request);
+                $response = Controller::execute($route, $request);
 
-                // If not a response object (string typically), constructs it (but it's a default instance)
-                if ($actionResult instanceof Response) {
-                    $response = $actionResult;
-                } elseif (is_string($actionResult)) {
+                if ($response === null) {
+                    throw new Exception('Invalid response');
+                }
+
+                // Legacy convention-based routes may return strings
+                if (is_string($response)) {
+                    $stringResult = $response;
                     $response = new Response();
                     $response->setHeader('Content-Type', 'text/html; charset=utf-8');
-                    $response->setContent($actionResult);
+                    $response->setContent($stringResult);
                 }
-            }
-
-            if ($response == null) {
-                throw new Exception('Invalid response');
             }
 
             // Send the response

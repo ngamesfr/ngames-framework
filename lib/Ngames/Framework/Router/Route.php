@@ -26,151 +26,125 @@ namespace Ngames\Framework\Router;
 
 /**
  * A route returned by the router.
- * It is a simple wrapper over the found module/controller/action.
- *
  */
 class Route
 {
-    /**
-     *
-     * @var string
-     */
-    protected $moduleName;
+    private ?string $controllerClass;
+
+    private ?string $actionMethod;
+
+    private array $parameters;
+
+    private array $middlewares;
+
+    // Legacy convention-based fields
+    private ?string $moduleName;
+
+    private ?string $controllerName;
+
+    private ?string $actionName;
+
+    private function __construct()
+    {
+    }
 
     /**
-     *
-     * @var string
+     * Create an annotated route.
      */
-    protected $controllerName;
-
-    /**
-     *
-     * @var string
-     */
-    protected $actionName;
-
-    /**
-     * @var array
-     */
-    private $parameters = [];
-
-    /**
-     * @var string|null
-     */
-    private $controllerClass;
-
-    /**
-     * @var string|null
-     */
-    private $actionMethod;
-
-    /**
-     * @var array
-     */
-    private $middlewares = [];
-
-    /**
-     *
-     * @param string $moduleName
-     * @param string $controllerName
-     * @param string $actionName
-     * @param array $parameters
-     * @param string|null $controllerClass
-     * @param string|null $actionMethod
-     * @param array $middlewares
-     */
-    public function __construct(
-        $moduleName,
-        $controllerName,
-        $actionName,
+    public static function create(
+        string $controllerClass,
+        string $actionMethod,
         array $parameters = [],
-        $controllerClass = null,
-        $actionMethod = null,
         array $middlewares = []
-    ) {
-        $this->moduleName = $moduleName;
-        $this->controllerName = $controllerName;
-        $this->actionName = $actionName;
-        $this->parameters = $parameters;
-        $this->controllerClass = $controllerClass;
-        $this->actionMethod = $actionMethod;
-        $this->middlewares = $middlewares;
+    ): self {
+        $route = new self();
+        $route->controllerClass = $controllerClass;
+        $route->actionMethod = $actionMethod;
+        $route->parameters = $parameters;
+        $route->middlewares = $middlewares;
+        $route->moduleName = null;
+        $route->controllerName = null;
+        $route->actionName = null;
+        return $route;
     }
 
     /**
+     * Create a convention-based route (legacy).
      *
-     * @return string
+     * @deprecated Use attribute-based routing instead.
      */
-    public function getModuleName()
-    {
-        return $this->moduleName;
+    public static function createLegacy(
+        string $moduleName,
+        string $controllerName,
+        string $actionName,
+        array $parameters = []
+    ): self {
+        $route = new self();
+        $route->moduleName = $moduleName;
+        $route->controllerName = $controllerName;
+        $route->actionName = $actionName;
+        $route->parameters = $parameters;
+        $route->controllerClass = null;
+        $route->actionMethod = null;
+        $route->middlewares = [];
+        return $route;
     }
 
-    /**
-     *
-     * @return string
-     */
-    public function getControllerName()
+    public function isAnnotated(): bool
     {
-        return $this->controllerName;
+        return $this->controllerClass !== null;
     }
 
-    /**
-     *
-     * @return string
-     */
-    public function getActionName()
+    public function getControllerClass(): ?string
     {
-        return $this->actionName;
+        return $this->controllerClass;
     }
 
-    /**
-     * @return array
-     */
-    public function getParameters()
+    public function getActionMethod(): ?string
+    {
+        return $this->actionMethod;
+    }
+
+    public function getParameters(): array
     {
         return $this->parameters;
     }
 
     /**
-     * @param string $name
      * @param mixed $default
      * @return mixed
      */
-    public function getParameter($name, $default = null)
+    public function getParameter(string $name, $default = null)
     {
-        return array_key_exists($name, $this->parameters) ? $this->parameters[$name] : $default;
+        return $this->parameters[$name] ?? $default;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getControllerClass()
-    {
-        return $this->controllerClass;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getActionMethod()
-    {
-        return $this->actionMethod;
-    }
-
-    /**
-     * @return array
-     */
-    public function getMiddlewares()
+    public function getMiddlewares(): array
     {
         return $this->middlewares;
     }
 
     /**
-     * @return bool
+     * @deprecated Legacy convention-based routing field.
      */
-    public function isAnnotated()
+    public function getModuleName(): ?string
     {
-        return $this->controllerClass !== null;
+        return $this->moduleName;
+    }
+
+    /**
+     * @deprecated Legacy convention-based routing field.
+     */
+    public function getControllerName(): ?string
+    {
+        return $this->controllerName;
+    }
+
+    /**
+     * @deprecated Legacy convention-based routing field.
+     */
+    public function getActionName(): ?string
+    {
+        return $this->actionName;
     }
 }

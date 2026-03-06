@@ -102,67 +102,31 @@ class Controller
 
     // Status helper methods
 
-    /**
-     * Return a successful response
-     *
-     * @param string|null $content
-     * @return Response
-     */
     protected function ok($content = null)
     {
         return Response::createOkResponse($content);
     }
 
-    /**
-     * Return a redirect response
-     *
-     * @param string $url
-     * @return Response
-     */
     protected function redirect($url)
     {
         return Response::createRedirectResponse($url);
     }
 
-    /**
-     * Return a not found response
-     *
-     * @param string|null $message
-     * @return Response
-     */
     protected function notFound($message = null)
     {
         return Response::createNotFoundResponse($message);
     }
 
-    /**
-     * Return a bad request response
-     *
-     * @param string|null $message
-     * @return Response
-     */
     protected function badRequest($message = null)
     {
         return Response::createBadRequestResponse($message);
     }
 
-    /**
-     * Return an internal error response
-     *
-     * @param string|null $message
-     * @return Response
-     */
     protected function internalError($message = null)
     {
         return Response::createInternalErrorResponse($message);
     }
 
-    /**
-     * Return an unauthorized response
-     *
-     * @param string|null $message
-     * @return Response
-     */
     protected function unauthorized($message = null)
     {
         return Response::createUnauthorizedResponse($message);
@@ -172,6 +136,8 @@ class Controller
      * Forward the request to another action.
      * Contrary to redirect, no HTTP response is sent to the user between the two actions.
      *
+     * @deprecated Use attribute-based routing instead of convention-based forwarding.
+     *
      * @param string $actionName
      * @param string|null $controllerName
      * @param string|null $moduleName
@@ -179,24 +145,18 @@ class Controller
      */
     protected function forward($actionName, $controllerName = null, $moduleName = null)
     {
-        // If module or controller not provided, use current route to determine current ones and use them
-        if ($moduleName === null || $controllerName === null) {
-            if ($moduleName === null) {
-                $moduleName = $this->route->getModuleName();
-            }
-            if ($controllerName === null) {
-                $controllerName = $this->route->getControllerName();
-            }
+        if ($moduleName === null) {
+            $moduleName = $this->route->getModuleName();
+        }
+        if ($controllerName === null) {
+            $controllerName = $this->route->getControllerName();
         }
 
-        // Build a new request
         $requestClone = clone $this->request;
         $requestClone->setRequestUri('/' . $moduleName . '/' . $controllerName . '/' . $actionName);
 
-        // Build a new route
-        $forwardRoute = new Route($moduleName, $controllerName, $actionName);
+        $forwardRoute = Route::createLegacy($moduleName, $controllerName, $actionName);
 
-        // Execute again for the forward
         return self::execute($forwardRoute, $requestClone);
     }
 
@@ -206,7 +166,7 @@ class Controller
      * @param mixed $json
      * @param int $options
      *
-     * @return \Ngames\Framework\Response
+     * @return Response
      */
     protected function json($json, $options = JSON_PRETTY_PRINT)
     {
@@ -218,105 +178,47 @@ class Controller
     }
 
     /**
-     * Execute the provided request.
+     * Execute a route.
      *
+     * @param Route $route
      * @param Request $request
      * @return mixed
      */
     public static function execute(Route $route, Request $request)
     {
-        // Annotated route dispatch path
         if ($route->isAnnotated()) {
             return self::executeAnnotated($route, $request);
         }
 
-        // Get module, controller and action from the route
-        $moduleName = $route->getModuleName();
-        $controllerName = $route->getControllerName();
-        $actionName = $route->getActionName();
-
-        // Build controller class name
-        $controllerClassName = self::CONTROLLER_NAMESPACE . '\\';
-        $controllerClassName .= ucfirst(Inflector::camelize(str_replace('-', '_', $moduleName))) . '\\';
-        $controllerClassName .= ucfirst(Inflector::camelize(str_replace('-', '_', $controllerName)));
-        $controllerClassName .= self::CONTROLLER_SUFFIX;
-
-        // Build action method name
-        $actionMethodName = Inflector::camelize(str_replace('-', '_', $actionName)) . self::ACTION_SUFFIX;
-
-        // Handle not found (test if class is loadable, exists and method exists)
-        if (!class_exists($controllerClassName) || !method_exists($controllerClassName, $actionMethodName)) {
-            $message = 'Not found: ' . $controllerClassName . '::' . $actionMethodName . '()';
-            \Ngames\Framework\Logger::logWarning($message);
-
-            return Response::createNotFoundResponse(\Ngames\Framework\Application::getInstance()->isDebug() ? $message : null);
-        }
-
-        // Create the controller
-        $controllerInstance = new $controllerClassName();
-        $controllerInstance->setRequest($request);
-        $controllerInstance->setRoute($route);
-
-        // Execute pre-execute
-        $result = $controllerInstance->preExecute();
-
-        // If pre-execute did not return an output, execute the action
-        if ($result === null) {
-            $result = $controllerInstance->$actionMethodName();
-        }
-
-        return $result;
+        return self::executeLegacy($route, $request);
     }
 
     /**
      * Execute an annotated route with parameter injection and middleware support.
-     *
-     * @param Route $route
-     * @param Request $request
-     * @return mixed
      */
     private static function executeAnnotated(Route $route, Request $request)
     {
         $controllerClassName = $route->getControllerClass();
         $actionMethodName = $route->getActionMethod();
 
-        // Handle not found
         if (!class_exists($controllerClassName) || !method_exists($controllerClassName, $actionMethodName)) {
-            $message = 'Not found: ' . $controllerClassName . '::' . $actionMethodName . '()';
-            \Ngames\Framework\Logger::logWarning($message);
-
-            return Response::createNotFoundResponse(\Ngames\Framework\Application::getInstance()->isDebug() ? $message : null);
+            return self::notFoundResponse($controllerClassName, $actionMethodName);
         }
 
-        // Resolve parameters via reflection
         $args = self::resolveParameters($controllerClassName, $actionMethodName, $route);
         if ($args instanceof Response) {
             return $args;
         }
 
-        // Create the controller
-        $controllerInstance = new $controllerClassName();
-        $controllerInstance->setRequest($request);
-        $controllerInstance->setRoute($route);
+        $controllerInstance = self::createController($controllerClassName, $route, $request);
 
-        // Build the innermost callable (preExecute + action)
         $innerAction = function (Request $request) use ($controllerInstance, $actionMethodName, $args) {
             $result = $controllerInstance->preExecute();
             if ($result === null) {
                 $result = $controllerInstance->$actionMethodName(...$args);
             }
 
-            // Ensure we return a Response
-            if ($result instanceof Response) {
-                return $result;
-            } elseif (is_string($result)) {
-                $response = new Response();
-                $response->setHeader('Content-Type', 'text/html; charset=utf-8');
-                $response->setContent($result);
-                return $response;
-            }
-
-            return new Response();
+            return self::toResponse($result);
         };
 
         // Build middleware chain (wrapping from inside out)
@@ -333,21 +235,92 @@ class Controller
     }
 
     /**
+     * Execute a convention-based route (legacy).
+     *
+     * @deprecated Use attribute-based routing instead.
+     */
+    private static function executeLegacy(Route $route, Request $request)
+    {
+        $moduleName = $route->getModuleName();
+        $controllerName = $route->getControllerName();
+        $actionName = $route->getActionName();
+
+        $controllerClassName = self::CONTROLLER_NAMESPACE . '\\';
+        $controllerClassName .= ucfirst(Inflector::camelize(str_replace('-', '_', $moduleName))) . '\\';
+        $controllerClassName .= ucfirst(Inflector::camelize(str_replace('-', '_', $controllerName)));
+        $controllerClassName .= self::CONTROLLER_SUFFIX;
+
+        $actionMethodName = Inflector::camelize(str_replace('-', '_', $actionName)) . self::ACTION_SUFFIX;
+
+        if (!class_exists($controllerClassName) || !method_exists($controllerClassName, $actionMethodName)) {
+            return self::notFoundResponse($controllerClassName, $actionMethodName);
+        }
+
+        $controllerInstance = self::createController($controllerClassName, $route, $request);
+
+        $result = $controllerInstance->preExecute();
+        if ($result === null) {
+            $result = $controllerInstance->$actionMethodName();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Instantiate a controller and bind the route and request to it.
+     */
+    private static function createController(string $className, Route $route, Request $request): self
+    {
+        $controller = new $className();
+        $controller->setRequest($request);
+        $controller->setRoute($route);
+
+        return $controller;
+    }
+
+    /**
+     * Create a not-found response with optional debug info.
+     */
+    private static function notFoundResponse(string $className, string $methodName): Response
+    {
+        $message = 'Not found: ' . $className . '::' . $methodName . '()';
+        Logger::logWarning($message);
+
+        return Response::createNotFoundResponse(Application::getInstance()->isDebug() ? $message : null);
+    }
+
+    /**
+     * Convert an action result to a Response.
+     */
+    private static function toResponse($result): Response
+    {
+        if ($result instanceof Response) {
+            return $result;
+        }
+
+        if (is_string($result)) {
+            $response = new Response();
+            $response->setHeader('Content-Type', 'text/html; charset=utf-8');
+            $response->setContent($result);
+
+            return $response;
+        }
+
+        return new Response();
+    }
+
+    /**
      * Resolve action method parameters from route parameters.
      *
-     * @param string $controllerClassName
-     * @param string $actionMethodName
-     * @param Route $route
      * @return array|Response
      */
-    private static function resolveParameters($controllerClassName, $actionMethodName, Route $route)
+    private static function resolveParameters(string $className, string $methodName, Route $route)
     {
-        $reflectionMethod = new \ReflectionMethod($controllerClassName, $actionMethodName);
-        $parameters = $reflectionMethod->getParameters();
+        $reflectionMethod = new \ReflectionMethod($className, $methodName);
         $routeParams = $route->getParameters();
         $args = [];
 
-        foreach ($parameters as $param) {
+        foreach ($reflectionMethod->getParameters() as $param) {
             $name = $param->getName();
             if (array_key_exists($name, $routeParams)) {
                 $value = $routeParams[$name];
@@ -369,17 +342,14 @@ class Controller
     /**
      * Cast a string value to the given type.
      *
-     * @param string $value
-     * @param string $type
      * @return mixed
      */
-    private static function castValue($value, $type)
+    private static function castValue(string $value, string $type)
     {
         return match ($type) {
             'int' => (int) $value,
             'float' => (float) $value,
             'bool' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
-            'string' => (string) $value,
             default => $value,
         };
     }

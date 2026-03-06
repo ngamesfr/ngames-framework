@@ -48,13 +48,41 @@ class Router
     private $registeredPatterns = [];
 
     /**
-     * Adds a new matcher at the begining of the matcher list.
+     * Adds a new matcher at the end of the matcher list.
      *
      * @param Matcher $matcher
      *
      * @return Router
      */
     public function addMatcher(Matcher $matcher)
+    {
+        $this->registerMatcher($matcher);
+        $this->matchers[] = $matcher;
+
+        return $this;
+    }
+
+    /**
+     * Prepend matchers at the beginning of the matcher list (preserving their order).
+     *
+     * @param Matcher[] $matchers
+     *
+     * @return Router
+     */
+    public function prependMatchers(array $matchers)
+    {
+        foreach ($matchers as $matcher) {
+            $this->registerMatcher($matcher);
+        }
+        array_unshift($this->matchers, ...$matchers);
+
+        return $this;
+    }
+
+    /**
+     * Register a matcher for duplicate detection and named route lookup.
+     */
+    private function registerMatcher(Matcher $matcher): void
     {
         $key = ($matcher->getMethod() ?? 'ANY') . ' ' . $matcher->getPattern();
 
@@ -63,13 +91,10 @@ class Router
         }
 
         $this->registeredPatterns[$key] = true;
-        $this->matchers[] = $matcher;
 
         if ($matcher->getName() !== null) {
             $this->namedMatchers[$matcher->getName()] = $matcher;
         }
-
-        return $this;
     }
 
     /**

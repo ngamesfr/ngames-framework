@@ -157,4 +157,45 @@ class RouterTest extends \PHPUnit\Framework\TestCase
         $router->addMatcher(new Matcher('/api/users/:id', 'GET', 'App\\UserCtrl', 'show', [], 'user.show'));
         $this->assertEquals('/api/users/42', $router->url('user.show', ['id' => '42']));
     }
+
+    public function testPrependMatchers_beforeExisting()
+    {
+        $router = new Router();
+        // User adds a catch-all matcher first
+        $router->addMatcher(@Matcher::forConventionRoute('/:module/:controller/:action'));
+
+        // Annotated routes are prepended — should match before the catch-all
+        $router->prependMatchers([
+            new Matcher('/blog', 'GET', 'Controller\\App\\BlogController', 'listAction'),
+        ]);
+
+        $route = $router->getRoute('/blog', 'GET');
+        $this->assertNotNull($route);
+        $this->assertTrue($route->isAnnotated());
+        $this->assertEquals('Controller\\App\\BlogController', $route->getControllerClass());
+    }
+
+    public function testPrependMatchers_preservesInternalOrder()
+    {
+        $router = new Router();
+        $router->addMatcher(@Matcher::forConventionRoute('/fallback', 'mod', 'ctrl', 'fallback'));
+
+        $router->prependMatchers([
+            new Matcher('/first', 'GET', 'App\\First', 'indexAction'),
+            new Matcher('/second', 'GET', 'App\\Second', 'indexAction'),
+        ]);
+
+        // First prepended matcher wins for /first
+        $route = $router->getRoute('/first', 'GET');
+        $this->assertEquals('App\\First', $route->getControllerClass());
+
+        // Second prepended matcher wins for /second
+        $route = $router->getRoute('/second', 'GET');
+        $this->assertEquals('App\\Second', $route->getControllerClass());
+
+        // Fallback still reachable
+        $route = $router->getRoute('/fallback');
+        $this->assertNotNull($route);
+        $this->assertEquals('fallback', $route->getActionName());
+    }
 }

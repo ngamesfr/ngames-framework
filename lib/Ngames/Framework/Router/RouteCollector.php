@@ -194,16 +194,8 @@ class RouteCollector
     private function isPrecededBy(array $tokens, int $index, int $tokenType): bool
     {
         for ($i = $index - 1; $i >= 0; $i--) {
-            if (!is_array($tokens[$i])) {
-                return false;
-            }
-
-            if ($tokens[$i][0] === $tokenType) {
-                return true;
-            }
-
-            if ($tokens[$i][0] !== T_WHITESPACE) {
-                return false;
+            if (!is_array($tokens[$i]) || $tokens[$i][0] !== T_WHITESPACE) {
+                return is_array($tokens[$i]) && $tokens[$i][0] === $tokenType;
             }
         }
 

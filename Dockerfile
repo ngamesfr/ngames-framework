@@ -6,6 +6,7 @@ RUN apt-get update && \
     apt-get install -y libjpeg-dev libfreetype6-dev zlib1g-dev libpng-dev curl zip && \
     docker-php-ext-configure gd --with-jpeg && \
     docker-php-ext-install gd pdo pdo_mysql && \
+    pecl install apcu && docker-php-ext-enable apcu && \
     echo "access.log = /dev/null" >> /usr/local/etc/php-fpm.d/www.conf
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

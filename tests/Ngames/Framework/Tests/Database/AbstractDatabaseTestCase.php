@@ -29,7 +29,7 @@ use Ngames\Framework\Database\Connection;
 /**
  * Common test case class for all tests involving a database
  */
-class AbstractDatabaseTestCase extends \PHPUnit\Framework\TestCase
+abstract class AbstractDatabaseTestCase extends \PHPUnit\Framework\TestCase
 {
     public static function setUpBeforeClass(): void
     {

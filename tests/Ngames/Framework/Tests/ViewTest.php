@@ -82,7 +82,7 @@ class ViewTest extends \PHPUnit\Framework\TestCase
 
     public function testSetScriptFromRoute()
     {
-        $route = new Route('module', 'controller', 'action');
+        $route = Route::createLegacy('module', 'controller', 'action');
         $view = new View();
         $view->setScriptFromRoute($route);
         $this->assertEquals('module/controller/action', $view->getScript());

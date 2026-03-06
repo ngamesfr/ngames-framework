@@ -89,14 +89,15 @@ class Router
     /**
      *
      * @param string $uri
+     * @param string|null $method
      * @return Route|null the found route if any, null otherwise
      */
-    public function getRoute($uri)
+    public function getRoute($uri, $method = null)
     {
         $result = null;
 
         foreach ($this->matchers as $matcher) {
-            $matchedRoute = $matcher->match($uri);
+            $matchedRoute = $matcher->match($uri, $method);
             if ($matchedRoute !== null) {
                 $result = $matchedRoute;
                 break;

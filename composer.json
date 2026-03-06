@@ -13,8 +13,12 @@
             "Ngames\\Framework\\" : "lib/Ngames/Framework/"
         }
     },
+    "version": "0.6.0",
     "require": {
-        "php": ">= 8.5"
+        "php": ">= 8.4"
+    },
+    "suggest": {
+        "ext-apcu": "For caching annotated route definitions"
     },
     "require-dev": {
         "phpunit/phpunit": "~12.5",

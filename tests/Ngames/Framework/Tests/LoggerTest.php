@@ -28,26 +28,17 @@ use Ngames\Framework\Logger;
 
 class LoggerTest extends \PHPUnit\Framework\TestCase
 {
-    private $expectedMessages = array();
-
-    private $notExpectedMessages = array();
-
     public function setUp(): void
     {
         ob_start();
     }
 
-    public function tearDown(): void
+    private function getCapturedOutput(): string
     {
         $output = ob_get_contents();
         ob_end_clean();
 
-        foreach ($this->expectedMessages as $expectedMessage) {
-            $this->assertStringContainsString($expectedMessage, $output);
-        }
-        foreach ($this->notExpectedMessages as $notExpectedMessage) {
-            $this->assertStringNotContainsString($notExpectedMessage, $output);
-        }
+        return $output;
     }
 
     public function testInitialize()
@@ -57,18 +48,16 @@ class LoggerTest extends \PHPUnit\Framework\TestCase
         Logger::logInfo('info message');
         Logger::logWarning('warning message');
         Logger::logError('error message');
-        $this->expectedMessages = array(
-            'info message',
-            'warning message',
-            'error message'
-        );
-        $this->notExpectedMessages = array(
-            'debug message'
-        );
+        $output = $this->getCapturedOutput();
+        $this->assertStringContainsString('info message', $output);
+        $this->assertStringContainsString('warning message', $output);
+        $this->assertStringContainsString('error message', $output);
+        $this->assertStringNotContainsString('debug message', $output);
     }
 
     public function testSetDestination_error()
     {
+        ob_end_clean();
         $this->expectException('\Ngames\Framework\Exception');
         $this->expectExceptionMessage('Cannot open log file for writing');
         Logger::setDestination('\\//');
@@ -82,13 +71,11 @@ class LoggerTest extends \PHPUnit\Framework\TestCase
         Logger::logInfo('info message');
         Logger::logWarning('warning message');
         Logger::logError('error message');
-        $this->expectedMessages = array(
-            'debug message',
-            'info message',
-            'warning message',
-            'error message'
-        );
-        $this->notExpectedMessages = array();
+        $output = $this->getCapturedOutput();
+        $this->assertStringContainsString('debug message', $output);
+        $this->assertStringContainsString('info message', $output);
+        $this->assertStringContainsString('warning message', $output);
+        $this->assertStringContainsString('error message', $output);
     }
 
     public function test_minLevelInfo()
@@ -99,14 +86,11 @@ class LoggerTest extends \PHPUnit\Framework\TestCase
         Logger::logInfo('info message');
         Logger::logWarning('warning message');
         Logger::logError('error message');
-        $this->expectedMessages = array(
-            'info message',
-            'warning message',
-            'error message'
-        );
-        $this->notExpectedMessages = array(
-            'debug message'
-        );
+        $output = $this->getCapturedOutput();
+        $this->assertStringContainsString('info message', $output);
+        $this->assertStringContainsString('warning message', $output);
+        $this->assertStringContainsString('error message', $output);
+        $this->assertStringNotContainsString('debug message', $output);
     }
 
     public function test_minLevelWarning()
@@ -117,14 +101,11 @@ class LoggerTest extends \PHPUnit\Framework\TestCase
         Logger::logInfo('info message');
         Logger::logWarning('warning message');
         Logger::logError('error message');
-        $this->expectedMessages = array(
-            'warning message',
-            'error message'
-        );
-        $this->notExpectedMessages = array(
-            'debug message',
-            'info message'
-        );
+        $output = $this->getCapturedOutput();
+        $this->assertStringContainsString('warning message', $output);
+        $this->assertStringContainsString('error message', $output);
+        $this->assertStringNotContainsString('debug message', $output);
+        $this->assertStringNotContainsString('info message', $output);
     }
 
     public function test_minLevelError()
@@ -135,14 +116,11 @@ class LoggerTest extends \PHPUnit\Framework\TestCase
         Logger::logInfo('info message');
         Logger::logWarning('warning message');
         Logger::logError('error message');
-        $this->expectedMessages = array(
-            'error message'
-        );
-        $this->notExpectedMessages = array(
-            'debug message',
-            'info message',
-            'warning message'
-        );
+        $output = $this->getCapturedOutput();
+        $this->assertStringContainsString('error message', $output);
+        $this->assertStringNotContainsString('debug message', $output);
+        $this->assertStringNotContainsString('info message', $output);
+        $this->assertStringNotContainsString('warning message', $output);
     }
 
     public function test_logFormat()
@@ -151,8 +129,10 @@ class LoggerTest extends \PHPUnit\Framework\TestCase
         Logger::setMinLevel(Logger::LEVEL_DEBUG);
         Logger::logDebug('debug message');
         $lineNumber = __LINE__ - 1;
-        $this->expectedMessages = array(
-            '[DEBUG] ' . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Ngames' . DIRECTORY_SEPARATOR . 'Framework' . DIRECTORY_SEPARATOR . 'Tests' . DIRECTORY_SEPARATOR . 'LoggerTest.php:' . $lineNumber . ' - debug message'
+        $output = $this->getCapturedOutput();
+        $this->assertStringContainsString(
+            '[DEBUG] ' . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Ngames' . DIRECTORY_SEPARATOR . 'Framework' . DIRECTORY_SEPARATOR . 'Tests' . DIRECTORY_SEPARATOR . 'LoggerTest.php:' . $lineNumber . ' - debug message',
+            $output
         );
     }
 }

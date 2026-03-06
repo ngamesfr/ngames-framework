@@ -26,91 +26,126 @@ namespace Ngames\Framework\Router;
 
 /**
  * A route returned by the router.
- * It is a simple wrapper over the found module/controller/action.
- *
  */
 class Route
 {
-    /**
-     *
-     * @var string
-     */
-    protected $moduleName;
+    private ?string $controllerClass;
 
-    /**
-     *
-     * @var string
-     */
-    protected $controllerName;
+    private ?string $actionMethod;
 
-    /**
-     *
-     * @var string
-     */
-    protected $actionName;
+    private array $parameters;
 
-    /**
-     * @var array
-     */
-    private $parameters = [];
+    private array $middlewares;
 
-    /**
-     *
-     * @param string $moduleName
-     * @param string $controllerName
-     * @param string $actionName
-     * @param array $parameters
-     */
-    public function __construct($moduleName, $controllerName, $actionName, array $parameters = [])
+    // Legacy convention-based fields
+    private ?string $moduleName;
+
+    private ?string $controllerName;
+
+    private ?string $actionName;
+
+    private function __construct()
     {
-        $this->moduleName = $moduleName;
-        $this->controllerName = $controllerName;
-        $this->actionName = $actionName;
-        $this->parameters = $parameters;
+        // Private: use Route::create() or Route::createLegacy() named constructors
     }
 
     /**
-     *
-     * @return string
+     * Create an annotated route.
      */
-    public function getModuleName()
-    {
-        return $this->moduleName;
+    public static function create(
+        string $controllerClass,
+        string $actionMethod,
+        array $parameters = [],
+        array $middlewares = []
+    ): self {
+        $route = new self();
+        $route->controllerClass = $controllerClass;
+        $route->actionMethod = $actionMethod;
+        $route->parameters = $parameters;
+        $route->middlewares = $middlewares;
+        $route->moduleName = null;
+        $route->controllerName = null;
+        $route->actionName = null;
+        return $route;
     }
 
     /**
+     * Create a convention-based route (legacy).
      *
-     * @return string
+     * @deprecated Use attribute-based routing instead.
      */
-    public function getControllerName()
-    {
-        return $this->controllerName;
+    public static function createLegacy(
+        string $moduleName,
+        string $controllerName,
+        string $actionName,
+        array $parameters = []
+    ): self {
+        $route = new self();
+        $route->moduleName = $moduleName;
+        $route->controllerName = $controllerName;
+        $route->actionName = $actionName;
+        $route->parameters = $parameters;
+        $route->controllerClass = null;
+        $route->actionMethod = null;
+        $route->middlewares = [];
+        return $route;
     }
 
-    /**
-     *
-     * @return string
-     */
-    public function getActionName()
+    public function isAnnotated(): bool
     {
-        return $this->actionName;
+        return $this->controllerClass !== null;
     }
 
-    /**
-     * @return array
-     */
-    public function getParameters()
+    public function getControllerClass(): ?string
+    {
+        return $this->controllerClass;
+    }
+
+    public function getActionMethod(): ?string
+    {
+        return $this->actionMethod;
+    }
+
+    public function getParameters(): array
     {
         return $this->parameters;
     }
 
     /**
-     * @param string $name
      * @param mixed $default
      * @return mixed
      */
-    public function getParameter($name, $default = null)
+    public function getParameter(string $name, $default = null)
     {
-        return array_key_exists($name, $this->parameters) ? $this->parameters[$name] : $default;
+        return $this->parameters[$name] ?? $default;
+    }
+
+    public function getMiddlewares(): array
+    {
+        return $this->middlewares;
+    }
+
+    /**
+     * @deprecated Legacy convention-based routing field.
+     */
+    public function getModuleName(): ?string
+    {
+        return $this->moduleName;
+    }
+
+    /**
+     * @deprecated Legacy convention-based routing field.
+     */
+    public function getControllerName(): ?string
+    {
+        return $this->controllerName;
+    }
+
+    /**
+     * @deprecated Legacy convention-based routing field.
+     */
+    public function getActionName(): ?string
+    {
+        return $this->actionName;
     }
 }

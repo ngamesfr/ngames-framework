@@ -135,7 +135,7 @@ class ControllerTest extends \PHPUnit\Framework\TestCase
 
     public function testExecute()
     {
-        $route = new Route('application', 'dummy', 'index');
+        $route = Route::createLegacy('application', 'dummy', 'index');
         $request = new Request();
         ob_start();
         Controller::execute($route, $request)->send();
@@ -146,7 +146,7 @@ class ControllerTest extends \PHPUnit\Framework\TestCase
 
     public function testForward()
     {
-        $route = new Route('application', 'dummy', 'forward');
+        $route = Route::createLegacy('application', 'dummy', 'forward');
         $request = new Request();
         ob_start();
         Controller::execute($route, $request)->send();
@@ -159,7 +159,7 @@ class ControllerTest extends \PHPUnit\Framework\TestCase
     {
         // Application instance needed for the configuration
         Application::initialize(ROOT_DIR . '/tests/data/Application/config.ini');
-        $route = new Route('application', 'dummy', 'does_not_exist');
+        $route = Route::createLegacy('application', 'dummy', 'does_not_exist');
         $request = new Request();
         ob_start();
         Controller::execute($route, $request)->send();

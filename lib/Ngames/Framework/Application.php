@@ -24,6 +24,7 @@
 
 namespace Ngames\Framework;
 
+use Ngames\Framework\Router\RouteCollector;
 use Ngames\Framework\Router\Router;
 use Ngames\Framework\Storage\IniFile;
 
@@ -147,6 +148,21 @@ class Application
     }
 
     /**
+     * Register annotated controllers from the given directories.
+     *
+     * @param array|null $directories
+     */
+    public function registerAnnotatedControllers(?array $directories = null): void
+    {
+        if ($directories === null) {
+            $directories = [ROOT_DIR . '/src/Controller'];
+        }
+
+        $collector = new RouteCollector();
+        $collector->collect($directories, $this->router);
+    }
+
+    /**
      * Whether application is in debug mode or not.
      *
      * @return boolean
@@ -164,27 +180,26 @@ class Application
         try {
             // Execute the module/controller/action
             $request = new \Ngames\Framework\Request($_GET, $_POST, $_COOKIE, $_SERVER, $_FILES, file_get_contents('php://input'));
-            $route = $this->router->getRoute($request->getRequestUri());
+            $route = $this->router->getRoute($request->getRequestUri(), $request->getMethod());
             $response = null;
 
-            if ($route == null) {
+            if ($route === null) {
                 $response = Response::createNotFoundResponse($this->isDebug() ? 'No route matched the requested URI' : null);
             } else {
                 $request->mergeGetParameters($route->getParameters());
-                $actionResult = Controller::execute($route, $request);
+                $response = Controller::execute($route, $request);
 
-                // If not a response object (string typically), constructs it (but it's a default instance)
-                if ($actionResult instanceof Response) {
-                    $response = $actionResult;
-                } elseif (is_string($actionResult)) {
+                if ($response === null) {
+                    throw new Exception('Invalid response');
+                }
+
+                // Legacy convention-based routes may return strings
+                if (is_string($response)) {
+                    $stringResult = $response;
                     $response = new Response();
                     $response->setHeader('Content-Type', 'text/html; charset=utf-8');
-                    $response->setContent($actionResult);
+                    $response->setContent($stringResult);
                 }
-            }
-
-            if ($response == null) {
-                throw new Exception('Invalid response');
             }
 
             // Send the response

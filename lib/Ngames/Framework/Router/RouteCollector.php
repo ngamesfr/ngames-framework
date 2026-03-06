@@ -40,12 +40,8 @@ class RouteCollector
         $routes = $this->loadRoutes($directories);
 
         foreach ($routes as $routeData) {
-            $matcher = new Matcher(
+            $matcher = Matcher::forAnnotatedRoute(
                 $routeData['pattern'],
-                null,
-                null,
-                null,
-                $routeData['name'],
                 $routeData['method'],
                 $routeData['controllerClass'],
                 $routeData['actionMethod'],
@@ -195,34 +191,34 @@ class RouteCollector
 
         // Process methods
         foreach ($reflectionClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-            foreach (self::HTTP_METHOD_ATTRIBUTES as $attributeClass => $httpMethod) {
-                $methodAttributes = $method->getAttributes($attributeClass);
+            $this->processMethod($method, $basePath, $className, $classMiddlewares, $routes);
+        }
+    }
 
-                foreach ($methodAttributes as $methodAttribute) {
-                    $attr = $methodAttribute->newInstance();
-                    $fullPath = rtrim($basePath, '/') . '/' . ltrim($attr->path, '/');
-                    $fullPath = rtrim($fullPath, '/');
-                    if ($fullPath === '') {
-                        $fullPath = '/';
-                    }
+    /**
+     * Process a single method for HTTP method attributes.
+     */
+    private function processMethod(\ReflectionMethod $method, string $basePath, string $className, array $classMiddlewares, array &$routes): void
+    {
+        $methodMiddlewares = [];
+        foreach ($method->getAttributes(Middleware::class) as $mwAttr) {
+            $methodMiddlewares[] = $mwAttr->newInstance()->class;
+        }
+        $allMiddlewares = array_merge($classMiddlewares, $methodMiddlewares);
 
-                    // Collect method-level middleware
-                    $methodMiddlewares = [];
-                    foreach ($method->getAttributes(Middleware::class) as $mwAttr) {
-                        $methodMiddlewares[] = $mwAttr->newInstance()->class;
-                    }
+        foreach (self::HTTP_METHOD_ATTRIBUTES as $attributeClass => $httpMethod) {
+            foreach ($method->getAttributes($attributeClass) as $methodAttribute) {
+                $fullPath = rtrim($basePath, '/') . '/' . ltrim($methodAttribute->newInstance()->path, '/');
+                $fullPath = rtrim($fullPath, '/') ?: '/';
 
-                    $allMiddlewares = array_merge($classMiddlewares, $methodMiddlewares);
-
-                    $routes[] = [
-                        'pattern' => $fullPath,
-                        'method' => $httpMethod,
-                        'controllerClass' => $className,
-                        'actionMethod' => $method->getName(),
-                        'middlewares' => $allMiddlewares,
-                        'name' => null,
-                    ];
-                }
+                $routes[] = [
+                    'pattern' => $fullPath,
+                    'method' => $httpMethod,
+                    'controllerClass' => $className,
+                    'actionMethod' => $method->getName(),
+                    'middlewares' => $allMiddlewares,
+                    'name' => null,
+                ];
             }
         }
     }

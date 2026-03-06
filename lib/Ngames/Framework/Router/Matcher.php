@@ -70,9 +70,6 @@ class Matcher
      * @param string|null $actionName
      * @param string|null $name
      * @param string|null $method
-     * @param string|null $controllerClass
-     * @param string|null $actionMethod
-     * @param array $middlewares
      */
     public function __construct(
         $pattern,
@@ -80,10 +77,7 @@ class Matcher
         $controllerName = null,
         $actionName = null,
         $name = null,
-        $method = null,
-        $controllerClass = null,
-        $actionMethod = null,
-        array $middlewares = []
+        $method = null
     ) {
         $this->pattern = $pattern;
         $this->moduleName = $moduleName;
@@ -91,14 +85,28 @@ class Matcher
         $this->actionName = $actionName;
         $this->name = $name;
         $this->method = $method !== null ? strtoupper($method) : null;
-        $this->controllerClass = $controllerClass;
-        $this->actionMethod = $actionMethod;
-        $this->middlewares = $middlewares;
+        $this->middlewares = [];
+        $this->check();
+    }
 
-        // Skip validation for annotated routes (they don't use module/controller/action)
-        if ($controllerClass === null) {
-            $this->check();
-        }
+    /**
+     * Create a matcher for an annotated route (attribute-based routing).
+     */
+    public static function forAnnotatedRoute(
+        string $pattern,
+        string $httpMethod,
+        string $controllerClass,
+        string $actionMethod,
+        array $middlewares = []
+    ): self {
+        $matcher = new \ReflectionClass(self::class);
+        $instance = $matcher->newInstanceWithoutConstructor();
+        $instance->pattern = $pattern;
+        $instance->method = strtoupper($httpMethod);
+        $instance->controllerClass = $controllerClass;
+        $instance->actionMethod = $actionMethod;
+        $instance->middlewares = $middlewares;
+        return $instance;
     }
 
     /**
@@ -141,57 +149,70 @@ class Matcher
             return null;
         }
 
-        $preparedPattern = $this->prepareForMatching($this->pattern);
-        $uri = $this->prepareForMatching($uri);
-        $currentModuleName = $this->moduleName;
-        $currentControllerName = $this->controllerName;
-        $currentActionName = $this->actionName;
-        $parameters = [];
-        $countPattern = count($preparedPattern);
-        $match = true;
+        $result = $this->matchPattern($uri);
 
-        if ($countPattern !== count($uri)) {
-            $match = false;
-        } else {
-            for ($i = 0; $i < $countPattern; $i++) {
-                $currentPatternPart = $preparedPattern[$i];
-                $currentUriPart = $uri[$i];
-
-                if ($currentPatternPart !== $currentUriPart) {
-                    if ($currentPatternPart === self::MODULE_KEY) {
-                        $currentModuleName = $currentUriPart;
-                    } elseif ($currentPatternPart === self::CONTROLLER_KEY) {
-                        $currentControllerName = $currentUriPart;
-                    } elseif ($currentPatternPart === self::ACTION_KEY) {
-                        $currentActionName = $currentUriPart;
-                    } elseif (str_starts_with($currentPatternPart, ':')) {
-                        $parameters[substr($currentPatternPart, 1)] = $currentUriPart;
-                    } else {
-                        $match = false;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (!$match) {
+        if ($result === null) {
             return null;
         }
 
-        // For annotated routes, create a Route with controller class metadata
-        if ($this->controllerClass !== null) {
-            return new Route(
-                $currentModuleName,
-                $currentControllerName,
-                $currentActionName,
-                $parameters,
-                $this->controllerClass,
-                $this->actionMethod,
-                $this->middlewares
-            );
+        return new Route(
+            $result['moduleName'],
+            $result['controllerName'],
+            $result['actionName'],
+            $result['parameters'],
+            $this->controllerClass,
+            $this->actionMethod,
+            $this->middlewares ?? []
+        );
+    }
+
+    /**
+     * Match the URI against the pattern and extract route components.
+     *
+     * @param string $uri
+     * @return array|null
+     */
+    private function matchPattern($uri)
+    {
+        $preparedPattern = $this->prepareForMatching($this->pattern);
+        $preparedUri = $this->prepareForMatching($uri);
+
+        if (count($preparedPattern) !== count($preparedUri)) {
+            return null;
         }
 
-        return new Route($currentModuleName, $currentControllerName, $currentActionName, $parameters);
+        $moduleName = $this->moduleName;
+        $controllerName = $this->controllerName;
+        $actionName = $this->actionName;
+        $parameters = [];
+
+        for ($i = 0; $i < count($preparedPattern); $i++) {
+            $patternPart = $preparedPattern[$i];
+            $uriPart = $preparedUri[$i];
+
+            if ($patternPart === $uriPart) {
+                continue;
+            }
+
+            if ($patternPart === self::MODULE_KEY) {
+                $moduleName = $uriPart;
+            } elseif ($patternPart === self::CONTROLLER_KEY) {
+                $controllerName = $uriPart;
+            } elseif ($patternPart === self::ACTION_KEY) {
+                $actionName = $uriPart;
+            } elseif (str_starts_with($patternPart, ':')) {
+                $parameters[substr($patternPart, 1)] = $uriPart;
+            } else {
+                return null;
+            }
+        }
+
+        return [
+            'moduleName' => $moduleName,
+            'controllerName' => $controllerName,
+            'actionName' => $actionName,
+            'parameters' => $parameters,
+        ];
     }
 
     /**

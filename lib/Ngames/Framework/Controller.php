@@ -319,15 +319,9 @@ class Controller
             return new Response();
         };
 
-        // Build middleware chain
-        $middlewares = $route->getMiddlewares();
-        if (empty($middlewares)) {
-            return $innerAction($request);
-        }
-
-        // Build the chain from inside out
+        // Build middleware chain (wrapping from inside out)
         $next = $innerAction;
-        foreach (array_reverse($middlewares) as $middlewareClass) {
+        foreach (array_reverse($route->getMiddlewares()) as $middlewareClass) {
             $currentNext = $next;
             $next = function (Request $request) use ($middlewareClass, $currentNext) {
                 $middleware = new $middlewareClass();

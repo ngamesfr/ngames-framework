@@ -7,10 +7,16 @@ use PHPUnit\Framework\TestCase;
 
 class MiddlewareTest extends TestCase
 {
-    public function testStoresClass()
+    public function testStoresSingleClass()
     {
         $attr = new Middleware('App\\Middleware\\RequireAuth');
-        $this->assertEquals('App\\Middleware\\RequireAuth', $attr->class);
+        $this->assertEquals(['App\\Middleware\\RequireAuth'], $attr->classes);
+    }
+
+    public function testStoresMultipleClasses()
+    {
+        $attr = new Middleware('App\\Middleware\\Auth', 'App\\Middleware\\Logging');
+        $this->assertEquals(['App\\Middleware\\Auth', 'App\\Middleware\\Logging'], $attr->classes);
     }
 
     public function testIsRepeatableAndWorksOnClassAndMethod()

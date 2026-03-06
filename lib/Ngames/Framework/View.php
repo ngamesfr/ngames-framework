@@ -32,7 +32,7 @@ use Ngames\Framework\Router\Route;
  * @property string content In case it's a parent view, there will be a 'content' property containing the child view content
  *
  */
-class View
+class View // NOSONAR - view class with helpers, splitting would be overengineering
 {
     /**
      * Define the default layout when not explicitely set.

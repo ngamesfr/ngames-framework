@@ -6,6 +6,7 @@ use Ngames\Framework\Controller;
 use Ngames\Framework\Router\Attribute\Delete;
 use Ngames\Framework\Router\Attribute\Get;
 use Ngames\Framework\Router\Attribute\Middleware;
+use Ngames\Framework\Router\Attribute\Patch;
 use Ngames\Framework\Router\Attribute\Post;
 use Ngames\Framework\Router\Attribute\Route;
 
@@ -54,5 +55,11 @@ class TestAnnotatedController extends Controller
     public function activeAction(bool $id)
     {
         return $this->json(['id' => $id]);
+    }
+
+    #[Patch('/:id')]
+    public function updateAction(int $id)
+    {
+        return $this->json(['patched' => $id]);
     }
 }

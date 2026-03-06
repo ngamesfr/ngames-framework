@@ -109,4 +109,16 @@ class RouteCollectorTest extends TestCase
 
         $this->assertNull($router->getRoute('/anything', 'GET'));
     }
+
+    public function testPatchMethodRoutes()
+    {
+        $router = new Router();
+        $collector = new RouteCollector();
+        $collector->collect([$this->fixturesDir], $router);
+
+        $route = $router->getRoute('/api/v1/alliances/42', 'PATCH');
+        $this->assertNotNull($route);
+        $this->assertEquals('updateAction', $route->getActionMethod());
+        $this->assertEquals(['id' => '42'], $route->getParameters());
+    }
 }

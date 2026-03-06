@@ -4,6 +4,7 @@ namespace Ngames\Framework\Tests\Router\Attribute;
 
 use Ngames\Framework\Router\Attribute\Delete;
 use Ngames\Framework\Router\Attribute\Get;
+use Ngames\Framework\Router\Attribute\Patch;
 use Ngames\Framework\Router\Attribute\Post;
 use Ngames\Framework\Router\Attribute\Put;
 use PHPUnit\Framework\TestCase;
@@ -68,6 +69,26 @@ class HttpMethodAttributeTest extends TestCase
     public function testDeleteIsMethodLevelAttribute()
     {
         $ref = new \ReflectionClass(Delete::class);
+        $attrs = $ref->getAttributes(\Attribute::class);
+        $attr = $attrs[0]->newInstance();
+        $this->assertEquals(\Attribute::TARGET_METHOD, $attr->flags);
+    }
+
+    public function testPatchStoresPath()
+    {
+        $attr = new Patch('/:id');
+        $this->assertEquals('/:id', $attr->path);
+    }
+
+    public function testPatchDefaultEmptyPath()
+    {
+        $attr = new Patch();
+        $this->assertEquals('', $attr->path);
+    }
+
+    public function testPatchIsMethodLevelAttribute()
+    {
+        $ref = new \ReflectionClass(Patch::class);
         $attrs = $ref->getAttributes(\Attribute::class);
         $attr = $attrs[0]->newInstance();
         $this->assertEquals(\Attribute::TARGET_METHOD, $attr->flags);

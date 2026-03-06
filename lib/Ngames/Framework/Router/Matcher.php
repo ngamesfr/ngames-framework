@@ -166,22 +166,9 @@ class Matcher
             return null;
         }
 
-        if ($this->controllerClass !== null) {
-            return Route::create(
-                $this->controllerClass,
-                $this->actionMethod,
-                $result['parameters'],
-                $this->middlewares
-            );
-        }
-
-        // Legacy convention-based route
-        return Route::createLegacy(
-            $result['moduleName'],
-            $result['controllerName'],
-            $result['actionName'],
-            $result['parameters']
-        );
+        return $this->controllerClass !== null
+            ? Route::create($this->controllerClass, $this->actionMethod, $result['parameters'], $this->middlewares)
+            : Route::createLegacy($result['moduleName'], $result['controllerName'], $result['actionName'], $result['parameters']);
     }
 
     /**

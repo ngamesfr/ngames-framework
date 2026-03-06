@@ -212,7 +212,8 @@ class Controller
 
         $controllerInstance = self::createController($controllerClassName, $route, $request);
 
-        $innerAction = function (Request $_request) use ($controllerInstance, $actionMethodName, $args) {
+        $innerAction = function (Request $middlewareRequest) use ($controllerInstance, $actionMethodName, $args) {
+            $controllerInstance->setRequest($middlewareRequest);
             $result = $controllerInstance->preExecute();
             if ($result === null) {
                 $result = $controllerInstance->$actionMethodName(...$args);

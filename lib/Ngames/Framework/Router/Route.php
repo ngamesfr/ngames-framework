@@ -46,6 +46,7 @@ class Route
 
     private function __construct()
     {
+        // Private: use Route::create() or Route::createLegacy() named constructors
     }
 
     /**

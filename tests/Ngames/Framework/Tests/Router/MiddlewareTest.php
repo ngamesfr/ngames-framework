@@ -36,7 +36,7 @@ class MiddlewareTest extends TestCase
             TestAnnotatedController::class,
             'listAction',
             [],
-            [TestClassMiddleware::class]
+            [new TestClassMiddleware()]
         );
         $request = new Request();
         $result = Controller::execute($route, $request);
@@ -49,7 +49,7 @@ class MiddlewareTest extends TestCase
             TestAnnotatedController::class,
             'deleteAction',
             ['id' => '42'],
-            [TestClassMiddleware::class, TestMethodMiddleware::class]
+            [new TestClassMiddleware(), new TestMethodMiddleware()]
         );
         $request = new Request();
         $result = Controller::execute($route, $request);
@@ -63,7 +63,7 @@ class MiddlewareTest extends TestCase
             TestAnnotatedController::class,
             'listAction',
             [],
-            [TestShortCircuitMiddleware::class]
+            [new TestShortCircuitMiddleware()]
         );
         $request = new Request();
         ob_start();
@@ -84,7 +84,7 @@ class MiddlewareTest extends TestCase
             TestAnnotatedController::class,
             'deleteAction',
             ['id' => '1'],
-            [TestClassMiddleware::class, TestMethodMiddleware::class]
+            [new TestClassMiddleware(), new TestMethodMiddleware()]
         );
         $request = new Request();
         $result = Controller::execute($route, $request);

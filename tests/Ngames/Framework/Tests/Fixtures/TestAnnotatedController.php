@@ -11,7 +11,7 @@ use Ngames\Framework\Router\Attribute\Post;
 use Ngames\Framework\Router\Attribute\Route;
 
 #[Route('/api/v1/alliances')]
-#[Middleware(TestClassMiddleware::class)]
+#[Middleware(new TestClassMiddleware())]
 class TestAnnotatedController extends Controller
 {
     #[Get]
@@ -27,7 +27,7 @@ class TestAnnotatedController extends Controller
     }
 
     #[Delete('/:id')]
-    #[Middleware(TestMethodMiddleware::class)]
+    #[Middleware(new TestMethodMiddleware())]
     public function deleteAction(int $id)
     {
         return $this->json(['deleted' => $id]);

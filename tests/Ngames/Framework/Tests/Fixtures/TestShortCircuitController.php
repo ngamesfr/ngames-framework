@@ -8,7 +8,7 @@ use Ngames\Framework\Router\Attribute\Middleware;
 use Ngames\Framework\Router\Attribute\Route;
 
 #[Route('/api/v1/blocked')]
-#[Middleware(TestShortCircuitMiddleware::class)]
+#[Middleware(new TestShortCircuitMiddleware())]
 class TestShortCircuitController extends Controller
 {
     #[Get]

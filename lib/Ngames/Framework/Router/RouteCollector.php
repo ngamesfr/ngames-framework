@@ -9,8 +9,6 @@ use Ngames\Framework\Router\Attribute\Patch;
 use Ngames\Framework\Router\Attribute\Post;
 use Ngames\Framework\Router\Attribute\Put;
 use Ngames\Framework\Router\Attribute\Route as RouteAttribute;
-use Ngames\Framework\Router\MiddlewareInterface;
-
 class RouteCollector
 {
     private const HTTP_METHOD_ATTRIBUTES = [
@@ -223,28 +221,12 @@ class RouteCollector
         // Collect class-level middleware
         $classMiddlewares = [];
         foreach ($reflectionClass->getAttributes(Middleware::class) as $attr) {
-            $classes = $attr->newInstance()->classes;
-            $this->validateMiddlewareClasses($classes, $className);
-            array_push($classMiddlewares, ...$classes);
+            array_push($classMiddlewares, ...$attr->newInstance()->instances);
         }
 
         // Process methods
         foreach ($reflectionClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
             $this->processMethod($method, $basePath, $className, $classMiddlewares, $routes);
-        }
-    }
-
-    private function validateMiddlewareClasses(array $classes, string $context): void
-    {
-        foreach ($classes as $class) {
-            if (!is_subclass_of($class, MiddlewareInterface::class)) {
-                throw new \InvalidArgumentException(sprintf(
-                    'Middleware "%s" declared on %s must implement %s',
-                    $class,
-                    $context,
-                    MiddlewareInterface::class
-                ));
-            }
         }
     }
 
@@ -255,9 +237,7 @@ class RouteCollector
     {
         $methodMiddlewares = [];
         foreach ($method->getAttributes(Middleware::class) as $mwAttr) {
-            $classes = $mwAttr->newInstance()->classes;
-            $this->validateMiddlewareClasses($classes, $className . '::' . $method->getName());
-            array_push($methodMiddlewares, ...$classes);
+            array_push($methodMiddlewares, ...$mwAttr->newInstance()->instances);
         }
         $allMiddlewares = array_merge($classMiddlewares, $methodMiddlewares);
 

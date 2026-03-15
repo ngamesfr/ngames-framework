@@ -3,20 +3,28 @@
 namespace Ngames\Framework\Tests\Router\Attribute;
 
 use Ngames\Framework\Router\Attribute\Middleware;
+use Ngames\Framework\Tests\Fixtures\TestClassMiddleware;
+use Ngames\Framework\Tests\Fixtures\TestMethodMiddleware;
 use PHPUnit\Framework\TestCase;
 
 class MiddlewareTest extends TestCase
 {
-    public function testStoresSingleClass()
+    public function testStoresSingleInstance()
     {
-        $attr = new Middleware('App\\Middleware\\RequireAuth');
-        $this->assertEquals(['App\\Middleware\\RequireAuth'], $attr->classes);
+        $mw = new TestClassMiddleware();
+        $attr = new Middleware($mw);
+        $this->assertCount(1, $attr->instances);
+        $this->assertSame($mw, $attr->instances[0]);
     }
 
-    public function testStoresMultipleClasses()
+    public function testStoresMultipleInstances()
     {
-        $attr = new Middleware('App\\Middleware\\Auth', 'App\\Middleware\\Logging');
-        $this->assertEquals(['App\\Middleware\\Auth', 'App\\Middleware\\Logging'], $attr->classes);
+        $mw1 = new TestClassMiddleware();
+        $mw2 = new TestMethodMiddleware();
+        $attr = new Middleware($mw1, $mw2);
+        $this->assertCount(2, $attr->instances);
+        $this->assertSame($mw1, $attr->instances[0]);
+        $this->assertSame($mw2, $attr->instances[1]);
     }
 
     public function testIsRepeatableAndWorksOnClassAndMethod()

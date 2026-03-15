@@ -225,10 +225,9 @@ class Controller
 
         // Build middleware chain (wrapping from inside out)
         $next = $innerAction;
-        foreach (array_reverse($route->getMiddlewares()) as $middlewareClass) {
+        foreach (array_reverse($route->getMiddlewares()) as $middleware) {
             $currentNext = $next;
-            $next = function (Request $request) use ($middlewareClass, $currentNext) {
-                $middleware = new $middlewareClass();
+            $next = function (Request $request) use ($middleware, $currentNext) {
                 return $middleware->handle($request, $currentNext);
             };
         }

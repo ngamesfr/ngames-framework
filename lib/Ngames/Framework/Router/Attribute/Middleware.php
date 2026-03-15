@@ -3,15 +3,16 @@
 namespace Ngames\Framework\Router\Attribute;
 
 use Attribute;
+use Ngames\Framework\Router\MiddlewareInterface;
 
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
 class Middleware
 {
-    /** @var string[] */
-    public array $classes;
+    /** @var MiddlewareInterface[] */
+    public array $instances;
 
-    public function __construct(string ...$classes)
+    public function __construct(MiddlewareInterface ...$instances)
     {
-        $this->classes = $classes;
+        $this->instances = $instances;
     }
 }

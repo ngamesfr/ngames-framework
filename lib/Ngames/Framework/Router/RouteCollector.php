@@ -9,6 +9,7 @@ use Ngames\Framework\Router\Attribute\Patch;
 use Ngames\Framework\Router\Attribute\Post;
 use Ngames\Framework\Router\Attribute\Put;
 use Ngames\Framework\Router\Attribute\Route as RouteAttribute;
+
 class RouteCollector
 {
     private const HTTP_METHOD_ATTRIBUTES = [

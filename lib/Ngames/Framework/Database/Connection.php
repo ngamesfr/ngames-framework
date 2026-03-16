@@ -52,10 +52,10 @@ class Connection
     {
         if (!self::$connection) {
             $configuration = \Ngames\Framework\Application::getInstance()->getConfiguration();
-            $dsn = sprintf('mysql:host=%s;dbname=%s', $configuration->database->host, $configuration->database->name);
+            $dsn = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $configuration->database->host, $configuration->database->name);
 
             self::$connection = new \PDO($dsn, $configuration->database->username, $configuration->database->password, [
-                \Pdo\Mysql::ATTR_INIT_COMMAND => 'SET NAMES \'UTF8\'',
+                \Pdo\Mysql::ATTR_INIT_COMMAND => 'SET NAMES \'utf8mb4\'',
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
             ]);
         }

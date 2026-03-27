@@ -173,42 +173,49 @@ class Application
     }
 
     /**
-     * Execute the request
+     * Process a request and return the response without sending it.
+     * This is the testable core of the request lifecycle.
+     */
+    public function handle(Request $request): Response
+    {
+        $this->registerAnnotatedControllers();
+
+        $route = $this->router->getRoute($request->getRequestUri(), $request->getMethod());
+
+        if ($route === null) {
+            return Response::createNotFoundResponse($this->isDebug() ? 'No route matched the requested URI' : null);
+        }
+
+        $request->mergeGetParameters($route->getParameters());
+        $response = Controller::execute($route, $request);
+
+        if ($response === null) {
+            throw new Exception('Invalid response');
+        }
+
+        // Legacy convention-based routes may return strings
+        if (is_string($response)) {
+            $stringResult = $response;
+            $response = new Response();
+            $response->setHeader('Content-Type', 'text/html; charset=utf-8');
+            $response->setContent($stringResult);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Execute the request (production entry point).
+     * Builds a Request from superglobals, delegates to handle(), sends the response.
      */
     public function run()
     {
         try {
-            $this->registerAnnotatedControllers();
-
-            // Execute the module/controller/action
-            $request = new \Ngames\Framework\Request($_GET, $_POST, $_COOKIE, $_SERVER, $_FILES, file_get_contents('php://input'));
-            $route = $this->router->getRoute($request->getRequestUri(), $request->getMethod());
-            $response = null;
-
-            if ($route === null) {
-                $response = Response::createNotFoundResponse($this->isDebug() ? 'No route matched the requested URI' : null);
-            } else {
-                $request->mergeGetParameters($route->getParameters());
-                $response = Controller::execute($route, $request);
-
-                if ($response === null) {
-                    throw new Exception('Invalid response');
-                }
-
-                // Legacy convention-based routes may return strings
-                if (is_string($response)) {
-                    $stringResult = $response;
-                    $response = new Response();
-                    $response->setHeader('Content-Type', 'text/html; charset=utf-8');
-                    $response->setContent($stringResult);
-                }
-            }
-
-            // Send the response
-            $response->send();
+            $request = new Request($_GET, $_POST, $_COOKIE, $_SERVER, $_FILES, file_get_contents('php://input'));
+            $this->handle($request)->send();
         } catch (\Throwable $e) {
-            $content = "Internal server error.\n\n" . \Ngames\Framework\Exception::trace($e);
-            \Ngames\Framework\Logger::logError($content);
+            $content = "Internal server error.\n\n" . Exception::trace($e);
+            Logger::logError($content);
 
             Response::createInternalErrorResponse($this->isDebug() ? $content : null)->send();
         }

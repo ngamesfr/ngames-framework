@@ -41,6 +41,20 @@ class Connection
     protected static $connection = null;
 
     /**
+     * @var ConnectionHandlerInterface|null
+     */
+    private static ?ConnectionHandlerInterface $handler = null;
+
+    /**
+     * Set a custom handler to delegate all database operations to.
+     * Pass null to restore default PDO behavior.
+     */
+    public static function setHandler(?ConnectionHandlerInterface $handler): void
+    {
+        self::$handler = $handler;
+    }
+
+    /**
      * Returns the instance of the connection.
      * If no instance has already been retrieved,
      * then it starts by establishing the connection.
@@ -50,6 +64,13 @@ class Connection
      */
     public static function getConnection()
     {
+        if (self::$handler !== null) {
+            $pdo = self::$handler->getConnection();
+            if ($pdo !== null) {
+                return $pdo;
+            }
+        }
+
         if (!self::$connection) {
             $configuration = \Ngames\Framework\Application::getInstance()->getConfiguration();
             $dsn = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $configuration->database->host, $configuration->database->name);
@@ -75,6 +96,10 @@ class Connection
      */
     public static function query($query, array $params = [])
     {
+        if (self::$handler !== null) {
+            return self::$handler->query($query, $params);
+        }
+
         try {
             $statement = self::getConnection()->prepare($query);
             $result = false;
@@ -106,6 +131,10 @@ class Connection
      */
     public static function exec($query, array $params = [])
     {
+        if (self::$handler !== null) {
+            return self::$handler->exec($query, $params);
+        }
+
         try {
             $statement = self::getConnection()->prepare($query);
             $result = false;
@@ -132,6 +161,10 @@ class Connection
      */
     public static function count($query, array $params = [])
     {
+        if (self::$handler !== null) {
+            return self::$handler->count($query, $params);
+        }
+
         return self::exec($query, $params);
     }
 
@@ -145,6 +178,10 @@ class Connection
      */
     public static function queryOne($query, array $params = [])
     {
+        if (self::$handler !== null) {
+            return self::$handler->queryOne($query, $params);
+        }
+
         $result = self::query($query, $params);
 
         return is_array($result) && !empty($result) ? $result[0] : false;
@@ -160,6 +197,10 @@ class Connection
      */
     public static function insert($tableName, array $data)
     {
+        if (self::$handler !== null) {
+            return self::$handler->insert($tableName, $data);
+        }
+
         $keys = array_keys($data);
         $placeholders = array_map(function ($v) {
             return ':' . $v;
@@ -183,6 +224,10 @@ class Connection
      */
     public static function findOneById($tableName, $id)
     {
+        if (self::$handler !== null) {
+            return self::$handler->findOneById($tableName, $id);
+        }
+
         $query = 'SELECT * FROM `' . $tableName . '` WHERE id=?';
 
         return self::queryOne($query, [

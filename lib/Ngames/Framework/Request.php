@@ -194,6 +194,14 @@ class Request
     }
 
     /**
+     * Override the raw body. Useful for testing.
+     */
+    public function setRawBody(string $body): void
+    {
+        $this->rawBody = $body;
+    }
+
+    /**
      * Return the value of the cookie.
      * If not found, return $default instead
      *

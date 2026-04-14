@@ -202,6 +202,25 @@ class Request
     }
 
     /**
+     * Return the request body decoded as JSON (associative array or scalar).
+     * Returns null if the body is empty or is not valid JSON.
+     *
+     * @return mixed|null
+     */
+    public function getJsonBody()
+    {
+        if ($this->rawBody === null || $this->rawBody === '') {
+            return null;
+        }
+
+        try {
+            return json_decode($this->rawBody, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return null;
+        }
+    }
+
+    /**
      * Return the value of the cookie.
      * If not found, return $default instead
      *

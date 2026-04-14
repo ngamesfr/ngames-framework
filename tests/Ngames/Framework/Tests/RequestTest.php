@@ -122,6 +122,24 @@ class RequestTest extends \PHPUnit\Framework\TestCase
         $request = $this->getRequest('GET', 'é');
     }
 
+    public function testGetJsonBody()
+    {
+        $request = new Request([], [], [], [], [], '{"foo":"bar","n":1}');
+        $this->assertSame(['foo' => 'bar', 'n' => 1], $request->getJsonBody());
+    }
+
+    public function testGetJsonBody_invalid()
+    {
+        $request = new Request([], [], [], [], [], 'not json');
+        $this->assertNull($request->getJsonBody());
+    }
+
+    public function testGetJsonBody_empty()
+    {
+        $this->assertNull((new Request([], [], [], [], [], null))->getJsonBody());
+        $this->assertNull((new Request([], [], [], [], [], ''))->getJsonBody());
+    }
+
     public function testGetRemoteAddress()
     {
         $request = new Request([], [], [], array(

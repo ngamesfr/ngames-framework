@@ -179,4 +179,18 @@ class ConnectionTest extends AbstractDatabaseTestCase
     {
         $this->assertIsArray(Connection::getQueries());
     }
+
+    public function testGetQueries_logsStartedAt()
+    {
+        $before = microtime(true);
+        Connection::query('SELECT * FROM book WHERE id=?', [1]);
+        $after = microtime(true);
+
+        $queries = Connection::getQueries();
+        $last = end($queries);
+
+        $this->assertArrayHasKey('startedAt', $last);
+        $this->assertGreaterThanOrEqual($before, $last['startedAt']);
+        $this->assertLessThanOrEqual($after, $last['startedAt']);
+    }
 }

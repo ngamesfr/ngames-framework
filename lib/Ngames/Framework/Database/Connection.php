@@ -107,7 +107,7 @@ class Connection
 
             if ($statement && $statement->execute($params)) {
                 $result = [];
-                self::logQuery($query, microtime(true) - $start);
+                self::logQuery($query, microtime(true) - $start, $start);
 
                 while ($row = $statement->fetch(\PDO::FETCH_ASSOC)) {
                     $result[] = $row;
@@ -141,7 +141,7 @@ class Connection
             $start = microtime(true);
 
             if ($statement && $statement->execute($params)) {
-                self::logQuery($query, microtime(true) - $start);
+                self::logQuery($query, microtime(true) - $start, $start);
                 $result = $statement->rowCount();
             }
         } catch (\PDOException $e) {
@@ -268,8 +268,9 @@ class Connection
      *
      * @param string $queryString
      * @param float $duration
+     * @param float $startedAt Unix timestamp (with microseconds) at which the query started
      */
-    protected static function logQuery($queryString, $duration)
+    protected static function logQuery($queryString, $duration, $startedAt)
     {
         // Keep only microsecodns (no nano)
         $duration = round($duration, 6) * 1000;
@@ -278,7 +279,8 @@ class Connection
         \Ngames\Framework\Logger::logDebug('SQL query: [' . $duration . ' ms] ' . $queryString);
         self::$queries[] = [
             'sql' => $queryString,
-            'duration' => $duration
+            'duration' => $duration,
+            'startedAt' => $startedAt,
         ];
     }
 }

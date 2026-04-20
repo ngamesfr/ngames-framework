@@ -78,6 +78,11 @@ class DummyController extends Controller
         return $this->json(array('key' => 'value'));
     }
 
+    public function jsonWithStatusAction()
+    {
+        return $this->json(array('error' => 'bad'), JSON_UNESCAPED_UNICODE, 400);
+    }
+
     public function forwardAction()
     {
         return $this->forward('forwardAfter');

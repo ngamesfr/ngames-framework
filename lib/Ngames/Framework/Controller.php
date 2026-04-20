@@ -165,12 +165,14 @@ class Controller
      *
      * @param mixed $json
      * @param int $options
+     * @param int $httpStatus
      *
      * @return Response
      */
-    protected function json($json, $options = JSON_PRETTY_PRINT)
+    protected function json($json, $options = JSON_PRETTY_PRINT, int $httpStatus = 200)
     {
         $response = new Response();
+        $response->setStatusCode($httpStatus);
         $response->setContentType('application/json', 'utf-8');
         $response->setContent(json_encode($json, $options));
 

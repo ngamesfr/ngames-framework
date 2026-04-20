@@ -133,6 +133,18 @@ class ControllerTest extends \PHPUnit\Framework\TestCase
         ob_end_clean();
     }
 
+    public function testJsonWithHttpStatus()
+    {
+        $controller = new DummyController();
+        $response = $controller->jsonWithStatusAction();
+        ob_start();
+        $response->send();
+        $this->assertEquals(json_encode(['error' => 'bad'], JSON_UNESCAPED_UNICODE), ob_get_contents());
+        $this->assertEquals(400, http_response_code());
+        $this->assertEquals('application/json; charset=utf-8', $response->getHeaders()['Content-Type']);
+        ob_end_clean();
+    }
+
     public function testExecute()
     {
         $route = Route::createLegacy('application', 'dummy', 'index');

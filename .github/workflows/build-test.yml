@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     steps:
     - name: Git checkout
@@ -45,6 +47,5 @@ jobs:
       run: composer run test -- --log-junit ./reports/phpunit.xml --coverage-clover ./reports/phpunit.coverage.xml
 
     - name: SonarCloud Scan
+      if: env.SONAR_TOKEN != ''
       uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9 # v7
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

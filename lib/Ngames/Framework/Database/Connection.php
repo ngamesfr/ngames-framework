@@ -92,7 +92,7 @@ class Connection
      * @param string $query
      * @param array $params
      *
-     * @return array|boolean The result of the query
+     * @return list<array<string, int|string|null>>|false The rows, or false when the query failed
      */
     public static function query($query, array $params = [])
     {
@@ -127,7 +127,7 @@ class Connection
      * @param string $query
      * @param array $params
      *
-     * @return int|boolean The number of rows impacted
+     * @return int|false The number of rows impacted
      */
     public static function exec($query, array $params = [])
     {
@@ -157,7 +157,7 @@ class Connection
      * @param string $query
      * @param array $params
      *
-     * @return int|boolean
+     * @return int|false
      */
     public static function count($query, array $params = [])
     {
@@ -174,7 +174,7 @@ class Connection
      * @param string $query
      * @param array $params
      *
-     * @return array|bool
+     * @return array<string, int|string|null>|false The row, or false when there is none
      */
     public static function queryOne($query, array $params = [])
     {
@@ -193,7 +193,7 @@ class Connection
      * @param string $tableName
      * @param array $data
      *
-     * @return bool|number
+     * @return int|false The inserted id, or false when the insert failed
      */
     public static function insert($tableName, array $data)
     {
@@ -220,7 +220,7 @@ class Connection
      * @param string $tableName
      * @param int $id
      *
-     * @return array|bool
+     * @return array<string, int|string|null>|false The row, or false when there is none
      */
     public static function findOneById($tableName, $id)
     {

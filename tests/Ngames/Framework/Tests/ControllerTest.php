@@ -187,6 +187,24 @@ class ControllerTest extends \PHPUnit\Framework\TestCase
         ob_end_clean();
     }
 
+    public function testExecuteUsesTheInstantiator()
+    {
+        $built = [];
+        Controller::setInstantiator(function (string $className) use (&$built) {
+            $built[] = $className;
+            return new $className();
+        });
+        try {
+            ob_start();
+            Controller::execute(Route::createLegacy('application', 'dummy', 'index'), new Request())->send();
+            $this->assertEquals('index', ob_get_contents());
+            ob_end_clean();
+            $this->assertEquals([DummyController::class], $built);
+        } finally {
+            Controller::setInstantiator(null);
+        }
+    }
+
     public function testForward()
     {
         $route = Route::createLegacy('application', 'dummy', 'forward');

@@ -62,6 +62,9 @@ class Controller
 
     private ?Input $input = null;
 
+    /** @var (callable(class-string): self)|null */
+    private static $instantiator = null;
+
     /**
      * Default constructor.
      * A view is created with default layout.
@@ -283,9 +286,20 @@ class Controller
     /**
      * Instantiate a controller and bind the route and request to it.
      */
+    /**
+     * Let the application build controllers itself, e.g. through a dependency container.
+     * The callable receives the controller class name and must return an instance of it.
+     *
+     * @param (callable(class-string): self)|null $instantiator
+     */
+    public static function setInstantiator(?callable $instantiator): void
+    {
+        self::$instantiator = $instantiator;
+    }
+
     private static function createController(string $className, Route $route, Request $request): self
     {
-        $controller = new $className();
+        $controller = self::$instantiator !== null ? (self::$instantiator)($className) : new $className();
         $controller->setRequest($request);
         $controller->setRoute($route);
 

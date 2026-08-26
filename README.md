@@ -52,3 +52,4 @@ That's all you need to startup the application.
 
 ### Controllers
 Controllers are located in a `src` folder in the root of the project. They are grouped by folders representing the modules. The default module is `Application`.
+Inside an action, `$this->input()` gives typed access to the request: `string()`, `int()`, `bool()` read the JSON body, `queryString()`, `queryInt()`, `queryPositiveInt()`, `queryBool()`, `hasQuery()` read the query string, `file()` returns an upload. A missing or mistyped value yields the default. `$this->json($data, $options, HttpStatus::NotFound)` and `Response::setStatusCode()` accept the `HttpStatus` enum as well as an int.

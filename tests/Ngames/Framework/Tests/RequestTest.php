@@ -140,6 +140,14 @@ class RequestTest extends \PHPUnit\Framework\TestCase
         $this->assertNull((new Request([], [], [], [], [], ''))->getJsonBody());
     }
 
+    public function testIsUploadOverflowed()
+    {
+        $this->assertTrue((new Request([], [], [], ['CONTENT_LENGTH' => '9000000'], []))->isUploadOverflowed());
+        $this->assertFalse((new Request([], [], [], ['CONTENT_LENGTH' => '9000000'], ['file' => []]))->isUploadOverflowed());
+        $this->assertFalse((new Request([], ['a' => '1'], [], ['CONTENT_LENGTH' => '12'], []))->isUploadOverflowed());
+        $this->assertFalse((new Request([], [], [], [], []))->isUploadOverflowed());
+    }
+
     public function testGetRemoteAddress()
     {
         $request = new Request([], [], [], array(

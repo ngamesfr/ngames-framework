@@ -60,6 +60,8 @@ class Controller
      */
     protected $request;
 
+    private ?Input $input = null;
+
     /**
      * Default constructor.
      * A view is created with default layout.
@@ -86,6 +88,15 @@ class Controller
     public function setRequest(Request $request)
     {
         $this->request = $request;
+        $this->input = null;
+    }
+
+    /**
+     * Typed accessors over the current request.
+     */
+    protected function input(): Input
+    {
+        return $this->input ??= new Input($this->request);
     }
 
     /**
@@ -165,11 +176,11 @@ class Controller
      *
      * @param mixed $json
      * @param int $options
-     * @param int $httpStatus
+     * @param HttpStatus|int $httpStatus
      *
      * @return Response
      */
-    protected function json($json, $options = JSON_PRETTY_PRINT, int $httpStatus = 200)
+    protected function json($json, $options = JSON_PRETTY_PRINT, HttpStatus|int $httpStatus = HttpStatus::Ok)
     {
         $response = new Response();
         $response->setStatusCode($httpStatus);

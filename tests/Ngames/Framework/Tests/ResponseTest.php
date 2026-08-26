@@ -24,6 +24,7 @@
 
 namespace Ngames\Framework\Tests;
 
+use Ngames\Framework\HttpStatus;
 use Ngames\Framework\Response;
 
 class ResponseTest extends \PHPUnit\Framework\TestCase
@@ -56,6 +57,14 @@ class ResponseTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(1234, http_response_code());
         $this->assertEquals('text/html; charset=UTF-8', $response->getHeaders()['Content-Type']);
         $this->assertEmpty($output);
+    }
+
+    public function testSend_statusCodeEnum()
+    {
+        $response = new Response();
+        $response->setStatusCode(HttpStatus::Conflict);
+        $this->sendResponseAndReturnOutput($response);
+        $this->assertEquals(409, http_response_code());
     }
 
     public function testSend_contentType()

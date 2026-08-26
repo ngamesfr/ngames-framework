@@ -114,11 +114,11 @@ class Response
     /**
      * Changes the response status code
      *
-     * @param int $statusCode
+     * @param HttpStatus|int $statusCode
      */
-    public function setStatusCode($statusCode)
+    public function setStatusCode(HttpStatus|int $statusCode)
     {
-        $this->statusCode = $statusCode;
+        $this->statusCode = $statusCode instanceof HttpStatus ? $statusCode->value : $statusCode;
     }
 
     /**

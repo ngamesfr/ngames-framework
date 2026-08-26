@@ -248,6 +248,16 @@ class Request
     }
 
     /**
+     * A body above post_max_size reaches PHP with empty POST and FILES but a positive Content-Length.
+     */
+    public function isUploadOverflowed(): bool
+    {
+        $length = $this->server['CONTENT_LENGTH'] ?? '0';
+
+        return $this->postParameters === [] && $this->files === [] && is_numeric($length) && (int) $length > 0;
+    }
+
+    /**
      * Return the uploaded file by name
      *
      * @param string $name

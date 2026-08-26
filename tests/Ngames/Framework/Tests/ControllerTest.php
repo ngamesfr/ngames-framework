@@ -145,6 +145,37 @@ class ControllerTest extends \PHPUnit\Framework\TestCase
         ob_end_clean();
     }
 
+    public function testJsonWithEnumStatus()
+    {
+        $controller = new DummyController();
+        $response = $controller->jsonWithEnumStatusAction();
+        ob_start();
+        $response->send();
+        $this->assertEquals(json_encode(['error' => 'missing'], JSON_UNESCAPED_UNICODE), ob_get_contents());
+        $this->assertEquals(404, http_response_code());
+        ob_end_clean();
+    }
+
+    public function testInput_followsRequest()
+    {
+        $controller = new DummyController();
+        $controller->setRequest(new Request(['page' => '3'], [], [], [], [], '{"name":"alpha"}'));
+        $this->assertEquals('alpha:3', $this->lastOutput($controller->inputAction()));
+
+        $controller->setRequest(new Request([], [], [], [], [], '{"name":"beta"}'));
+        $this->assertEquals('beta:0', $this->lastOutput($controller->inputAction()));
+    }
+
+    private function lastOutput($response): string
+    {
+        ob_start();
+        $response->send();
+        $output = ob_get_contents();
+        ob_end_clean();
+
+        return $output;
+    }
+
     public function testExecute()
     {
         $route = Route::createLegacy('application', 'dummy', 'index');

@@ -25,6 +25,7 @@
 namespace Controller\Application;
 
 use Ngames\Framework\Controller;
+use Ngames\Framework\HttpStatus;
 
 class DummyController extends Controller
 {
@@ -81,6 +82,16 @@ class DummyController extends Controller
     public function jsonWithStatusAction()
     {
         return $this->json(array('error' => 'bad'), JSON_UNESCAPED_UNICODE, 400);
+    }
+
+    public function jsonWithEnumStatusAction()
+    {
+        return $this->json(array('error' => 'missing'), JSON_UNESCAPED_UNICODE, HttpStatus::NotFound);
+    }
+
+    public function inputAction()
+    {
+        return $this->ok($this->input()->string('name') . ':' . $this->input()->queryInt('page'));
     }
 
     public function forwardAction()

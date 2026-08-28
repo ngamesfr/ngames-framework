@@ -42,11 +42,16 @@ class Controller
 
     public const ACTION_SUFFIX = 'Action';
 
-    /**
-     *
-     * @var View
-     */
-    protected $view;
+    protected ?View $view = null {
+        get {
+            if ($this->view === null) {
+                $this->view = new View();
+                $this->view->setLayout(View::DEFAULT_LAYOUT);
+            }
+
+            return $this->view;
+        }
+    }
 
     /**
      *
@@ -64,16 +69,6 @@ class Controller
 
     /** @var (callable(class-string): self)|null */
     private static $instantiator = null;
-
-    /**
-     * Default constructor.
-     * A view is created with default layout.
-     */
-    public function __construct()
-    {
-        $this->view = new View();
-        $this->view->setLayout(View::DEFAULT_LAYOUT);
-    }
 
     /**
      * Pre-execute.

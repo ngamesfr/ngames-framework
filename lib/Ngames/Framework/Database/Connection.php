@@ -145,7 +145,7 @@ class Connection
     }
 
     /**
-     * Count the number of rows matching the query.
+     * Count the rows a SELECT would return, without fetching them.
      *
      * @param string $query
      * @param array $params
@@ -158,7 +158,9 @@ class Connection
             return self::$handler->count($query, $params);
         }
 
-        return self::exec($query, $params);
+        $row = self::queryOne('SELECT COUNT(*) AS counted FROM (' . $query . ') AS counted_rows', $params);
+
+        return (int) ($row['counted'] ?? 0);
     }
 
     /**

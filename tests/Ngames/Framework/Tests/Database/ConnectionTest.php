@@ -99,8 +99,9 @@ class ConnectionTest extends AbstractDatabaseTestCase
 
     public function testCount()
     {
-        // SQLite does not support rowCount properly
-        $this->assertEquals(0, Connection::count('SELECT * FROM book'));
+        $this->assertSame(3, Connection::count('SELECT * FROM book'));
+        $this->assertSame(2, Connection::count('SELECT id FROM book WHERE author_id=?', array(1)));
+        $this->assertSame(0, Connection::count('SELECT id FROM book WHERE author_id=?', array(42)));
     }
 
     public function testCount_error()

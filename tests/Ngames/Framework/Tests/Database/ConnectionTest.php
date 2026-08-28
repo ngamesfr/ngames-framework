@@ -50,6 +50,11 @@ class ConnectionTest extends AbstractDatabaseTestCase
         $this->assertEquals(2, $result[2]['author_id']);
     }
 
+    public function testQuery_noRows()
+    {
+        $this->assertSame([], Connection::query('SELECT * FROM book WHERE id=?', array(42)));
+    }
+
     public function testQuery_error()
     {
         $this->expectException('\Ngames\Framework\Exception');
@@ -115,6 +120,11 @@ class ConnectionTest extends AbstractDatabaseTestCase
         ), Connection::queryOne('SELECT * FROM book ORDER BY id DESC'));
     }
 
+    public function testQueryOne_noRow()
+    {
+        $this->assertNull(Connection::queryOne('SELECT * FROM book WHERE id=?', array(42)));
+    }
+
     public function testQueryOne_error()
     {
         $this->expectException('\Ngames\Framework\Exception');
@@ -155,6 +165,11 @@ class ConnectionTest extends AbstractDatabaseTestCase
             'description' => 'Description 1',
             'author_id' => 1
         ), Connection::findOneById('book', 1));
+    }
+
+    public function testFindOneById_noRow()
+    {
+        $this->assertNull(Connection::findOneById('book', 42));
     }
 
     public function testFindOneById_error()

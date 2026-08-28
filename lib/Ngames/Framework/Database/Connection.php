@@ -92,9 +92,9 @@ class Connection
      * @param string $query
      * @param array $params
      *
-     * @return list<array<string, int|string|null>>|false The rows, or false when the query failed
+     * @return list<array<string, int|string|null>> The rows, empty when none match
      */
-    public static function query($query, array $params = [])
+    public static function query($query, array $params = []): array
     {
         if (self::$handler !== null) {
             return self::$handler->query($query, $params);
@@ -102,16 +102,13 @@ class Connection
 
         try {
             $statement = self::getConnection()->prepare($query);
-            $result = false;
             $start = microtime(true);
+            $statement->execute($params);
+            self::logQuery($query, microtime(true) - $start, $start);
 
-            if ($statement && $statement->execute($params)) {
-                $result = [];
-                self::logQuery($query, microtime(true) - $start, $start);
-
-                while ($row = $statement->fetch(\PDO::FETCH_ASSOC)) {
-                    $result[] = $row;
-                }
+            $result = [];
+            while ($row = $statement->fetch(\PDO::FETCH_ASSOC)) {
+                $result[] = $row;
             }
         } catch (\PDOException $e) {
             throw new \Ngames\Framework\Exception(self::PDO_EXCEPTION_MESSAGE, 0, $e);
@@ -127,9 +124,9 @@ class Connection
      * @param string $query
      * @param array $params
      *
-     * @return int|false The number of rows impacted
+     * @return int The number of rows impacted
      */
-    public static function exec($query, array $params = [])
+    public static function exec($query, array $params = []): int
     {
         if (self::$handler !== null) {
             return self::$handler->exec($query, $params);
@@ -137,18 +134,14 @@ class Connection
 
         try {
             $statement = self::getConnection()->prepare($query);
-            $result = false;
             $start = microtime(true);
+            $statement->execute($params);
+            self::logQuery($query, microtime(true) - $start, $start);
 
-            if ($statement && $statement->execute($params)) {
-                self::logQuery($query, microtime(true) - $start, $start);
-                $result = $statement->rowCount();
-            }
+            return $statement->rowCount();
         } catch (\PDOException $e) {
             throw new \Ngames\Framework\Exception(self::PDO_EXCEPTION_MESSAGE, 0, $e);
         }
-
-        return $result;
     }
 
     /**
@@ -157,9 +150,9 @@ class Connection
      * @param string $query
      * @param array $params
      *
-     * @return int|false
+     * @return int
      */
-    public static function count($query, array $params = [])
+    public static function count($query, array $params = []): int
     {
         if (self::$handler !== null) {
             return self::$handler->count($query, $params);
@@ -174,17 +167,15 @@ class Connection
      * @param string $query
      * @param array $params
      *
-     * @return array<string, int|string|null>|false The row, or false when there is none
+     * @return array<string, int|string|null>|null The row, or null when there is none
      */
-    public static function queryOne($query, array $params = [])
+    public static function queryOne($query, array $params = []): ?array
     {
         if (self::$handler !== null) {
             return self::$handler->queryOne($query, $params);
         }
 
-        $result = self::query($query, $params);
-
-        return is_array($result) && !empty($result) ? $result[0] : false;
+        return self::query($query, $params)[0] ?? null;
     }
 
     /**
@@ -193,9 +184,9 @@ class Connection
      * @param string $tableName
      * @param array $data
      *
-     * @return int|false The inserted id, or false when the insert failed
+     * @return int The inserted id
      */
-    public static function insert($tableName, array $data)
+    public static function insert($tableName, array $data): int
     {
         if (self::$handler !== null) {
             return self::$handler->insert($tableName, $data);
@@ -207,9 +198,7 @@ class Connection
         }, $keys);
         $query = 'INSERT INTO `' . $tableName . '` (' . implode(', ', $keys) . ') VALUES (' . implode(', ', $placeholders) . ')';
 
-        if (self::exec($query, $data) === false) {
-            return false;
-        }
+        self::exec($query, $data);
 
         return (int) self::getConnection()->lastInsertId();
     }
@@ -220,9 +209,9 @@ class Connection
      * @param string $tableName
      * @param int $id
      *
-     * @return array<string, int|string|null>|false The row, or false when there is none
+     * @return array<string, int|string|null>|null The row, or null when there is none
      */
-    public static function findOneById($tableName, $id)
+    public static function findOneById($tableName, $id): ?array
     {
         if (self::$handler !== null) {
             return self::$handler->findOneById($tableName, $id);

@@ -31,38 +31,28 @@ namespace Ngames\Framework\Database;
 interface ConnectionHandlerInterface
 {
     /**
-     * @return array|false
+     * @return list<array<string, int|string|null>>
      */
-    public function query(string $query, array $params = []): array|false;
+    public function query(string $query, array $params = []): array;
 
     /**
-     * @return array|false
+     * @return array<string, int|string|null>|null
      */
-    public function queryOne(string $query, array $params = []): array|false;
+    public function queryOne(string $query, array $params = []): ?array;
+
+    public function exec(string $query, array $params = []): int;
+
+    public function insert(string $tableName, array $data): int;
+
+    public function count(string $query, array $params = []): int;
 
     /**
-     * @return int|false
+     * @return array<string, int|string|null>|null
      */
-    public function exec(string $query, array $params = []): int|false;
+    public function findOneById(string $tableName, int|string $id): ?array;
 
     /**
-     * @return int|false
-     */
-    public function insert(string $tableName, array $data): int|false;
-
-    /**
-     * @return int|false
-     */
-    public function count(string $query, array $params = []): int|false;
-
-    /**
-     * @return array|false
-     */
-    public function findOneById(string $tableName, int|string $id): array|false;
-
-    /**
-     * Returns a PDO-compatible object for edge cases like quote().
-     * May return null when not supported (e.g. in mock handlers).
+     * Returns the underlying PDO connection, or null when the handler has none.
      */
     public function getConnection(): ?\PDO;
 }

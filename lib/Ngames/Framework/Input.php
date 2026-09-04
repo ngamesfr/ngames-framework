@@ -37,9 +37,25 @@ final class Input
 
     public function int(string $name, int $default = 0): int
     {
-        $value = $this->body()[$name] ?? null;
+        return self::toInt($this->body()[$name] ?? null, $default);
+    }
 
-        return is_int($value) || (is_string($value) && is_numeric($value)) ? (int) $value : $default;
+    /** Every element of a body list through the int rule; anything but a list reads as empty. @return list<int> */
+    public function intList(string $name): array
+    {
+        $values = $this->body()[$name] ?? null;
+
+        return is_array($values) ? array_values(array_map(static fn (mixed $value): int => self::toInt($value, 0), $values)) : [];
+    }
+
+    /** The same accessors over one nested object of the body; anything but an object reads as empty. */
+    public function object(string $name): self
+    {
+        $value = $this->body()[$name] ?? null;
+        $nested = new self($this->request);
+        $nested->body = is_array($value) ? $value : [];
+
+        return $nested;
     }
 
     public function bool(string $name, bool $default = false): bool
@@ -88,5 +104,10 @@ final class Input
         $file = $this->request->getFile($name);
 
         return is_array($file) ? $file : null;
+    }
+
+    private static function toInt(mixed $value, int $default): int
+    {
+        return is_int($value) || (is_string($value) && is_numeric($value)) ? (int) $value : $default;
     }
 }

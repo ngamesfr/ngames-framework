@@ -37,6 +37,25 @@ class InputTest extends TestCase
         $this->assertSame(0, $input->int('missing'));
     }
 
+    public function testIntList(): void
+    {
+        $input = $this->input('{"ids":[1,"2","x",null,1.5],"one":3}');
+        $this->assertSame([1, 2, 0, 0, 0], $input->intList('ids'));
+        $this->assertSame([], $input->intList('one'));
+        $this->assertSame([], $input->intList('missing'));
+    }
+
+    public function testObject(): void
+    {
+        $input = $this->input('{"attacker":{"count":"12","unit":"tanks","deep":{"n":1}},"flat":5}');
+        $attacker = $input->object('attacker');
+        $this->assertSame(12, $attacker->int('count'));
+        $this->assertSame('tanks', $attacker->string('unit'));
+        $this->assertSame(1, $attacker->object('deep')->int('n'));
+        $this->assertSame(7, $input->object('flat')->int('count', 7));
+        $this->assertSame([], $input->object('missing')->body());
+    }
+
     public function testBool(): void
     {
         $input = $this->input('{"t":true,"f":false,"s":"yes","z":"0","arr":[]}');

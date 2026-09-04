@@ -40,7 +40,11 @@ final class Input
         return self::toInt($this->body()[$name] ?? null, $default);
     }
 
-    /** Every element of a body list through the int rule; anything but a list reads as empty. @return list<int> */
+    /**
+     * Every element of a body list through the int rule; anything but a list reads as empty.
+     *
+     * @return list<int>
+     */
     public function intList(string $name): array
     {
         $values = $this->body()[$name] ?? null;
